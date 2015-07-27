@@ -1,10 +1,10 @@
-<p align="center"><img src="https://raw.githubusercontent.com/geerlingguy/drupal-vm/master/docs/images/drupal-vm-logo.png" alt="Drupal VM Logo" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/srowlands/govcms-drupal-vm/master/docs/images/drupal-vm-logo.png" alt="Drupal VM Logo" /></p>
 
-[![Build Status](https://travis-ci.org/geerlingguy/drupal-vm.svg?branch=master)](https://travis-ci.org/geerlingguy/drupal-vm) [![Documentation Status](https://readthedocs.org/projects/drupal-vm/badge/?version=latest)](http://docs.drupalvm.com)
+[![Build Status](https://travis-ci.org/srowlands/govcms-drupal-vm.svg?branch=master)](https://travis-ci.org/srowlands/govcms-drupal-vm) [![Documentation Status](https://readthedocs.org/projects/drupal-vm/badge/?version=latest)](http://docs.drupalvm.com)
 
-[Drupal VM](http://www.drupalvm.com/) is A VM for local Drupal development, built with Vagrant + Ansible.
+govCMS Drupal VM is a development environment based off [Drupal VM](http://www.drupalvm.com/), built with Vagrant + Ansible.
 
-This project aims to make spinning up a simple local Drupal test/development environment incredibly quick and easy, and to introduce new developers to the wonderful world of Drupal development on local virtual machines (instead of crufty old MAMP/WAMP-based development).
+This project aims to make spinning up a local or remote govCMS test/development environment using a standardised toolset.
 
 It will install the following on an Ubuntu 14.04 (by default) linux VM:
 
@@ -12,8 +12,7 @@ It will install the following on an Ubuntu 14.04 (by default) linux VM:
   - PHP 5.5.x (configurable)
   - MySQL 5.5.x
   - Drush (configurable)
-  - Drupal Console (if using Drupal 8+)
-  - Drupal 6.x, 7.x, or 8.x.x (configurable)
+  - govCMS 2.x
   - Optional:
     - Varnish 4.x
     - Apache Solr 4.10.x (configurable)
@@ -35,19 +34,14 @@ Full Drupal VM documentation is available at http://docs.drupalvm.com/
 
 ## Customizing the VM
 
-There are a couple places where you can customize the VM for your needs:
+This codebase comes preconfigured for the govCMS distribution. There are a couple places where you can customize the VM for your needs:
 
   - `config.yml`: Contains variables like the VM domain name and IP address, PHP and MySQL configuration, etc.
   - `drupal.make.yml`: Contains configuration for the Drupal core version, modules, and patches that will be downloaded on Drupal's initial installation (more about [Drush make files](https://www.drupal.org/node/1432374)).
 
-If you want to switch from Drupal 8 (default) to Drupal 7 or 6 on the initial install, do the following:
-
-  1. Update the Drupal `version` and `core` inside the `drupal.make.yml` file.
-  2. Update `drupal_major_version` inside `config.yml`.
-
 ## Quick Start Guide
 
-This Quick Start Guide will help you quickly build a Drupal 8 site on the Drupal VM using the included example Drush make file. You can also use the Drupal VM with a [Local Drupal codebase](https://github.com/geerlingguy/drupal-vm/wiki/Local-Drupal-codebase) or even a [Drupal multisite installation](https://github.com/geerlingguy/drupal-vm/wiki/Drupal-multisite).
+This Quick Start Guide will help you quickly build a govCMS site on the Drupal VM using the Drupal.org release of govCMS.
 
 ### 1 - Install dependencies (VirtualBox, Vagrant, Ansible)
 
@@ -64,20 +58,17 @@ Note on versions: *Please make sure you're running the latest stable version of 
 ### 2 - Build the Virtual Machine
 
   1. Download this project and put it wherever you want.
-  2. Make copies of both of the `example.*` files, and modify to your liking:
-    - Copy `example.drupal.make.yml` to `drupal.make.yml`.
-    - Copy `example.config.yml` to `config.yml`.
-  3. Create a local directory where Drupal will be installed and configure the path to that directory in `config.yml` (`local_path`, inside `vagrant_synced_folders`).
-  4. Open Terminal, cd to this directory (containing the `Vagrantfile` and this README file).
-  5. [Mac/Linux only] Install Ansible Galaxy roles required for this VM: `$ sudo ansible-galaxy install -r provisioning/requirements.txt --force`
-  6. Type in `vagrant up`, and let Vagrant do its magic.
+  2. Create a local directory (/var/www/govcms-vm) where govCMS will be installed. You may change this location in `config.yml` (`local_path`, inside `vagrant_synced_folders`).
+  3. Open Terminal, cd to this directory (containing the `Vagrantfile` and this README file).
+  4. [Mac/Linux only] Install Ansible Galaxy roles required for this VM: `$ sudo ansible-galaxy install -r provisioning/requirements.txt --force`
+  5. Type in `vagrant up`, and let Vagrant do its magic.
 
 Note: *If there are any errors during the course of running `vagrant up`, and it drops you back to your command prompt, just run `vagrant provision` to continue building the VM from where you left off. If there are still errors after doing this a few times, post an issue to this project's issue queue on GitHub with the error.*
 
 ### 3 - Configure your host machine to access the VM.
 
   1. [Edit your hosts file](http://www.rackspace.com/knowledge_center/article/how-do-i-modify-my-hosts-file), adding the line `192.168.88.88  drupalvm.dev` so you can connect to the VM. Alternatively, you can install a Vagrant plugin to automatically add and remove the entry from your hosts file; run `vagrant plugin install vagrant-hostsupdater`. The plugin will also add in all other hosts defined via `apache_vhosts`.
-  2. Open your browser and access [http://drupalvm.dev/](http://drupalvm.dev/). The default login for the admin account is `admin` for both the username and password.
+  2. Open your browser and access [http://govcms.dev/](http://govcms.dev/). The default login for the admin account is `admin` for both the username and password.
 
 ## Extra software/utilities
 
