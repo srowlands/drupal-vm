@@ -1,0 +1,20 @@
+---
+- name: Ensure log-parser rules directory exists.
+  file: >
+    path={{jenkins_home}}/log-parser-rules
+    state=directory
+    owner={{jenkins_user}}
+    group={{jenkins_group}}
+    mode=0775
+  sudo: yes
+  when: '"jenkins" in installed_extras'
+
+- name: Configure Jenkins log-parser rules.
+  copy: >
+    src=templates/jenkins-drush-log-parser
+    dest={{jenkins_home}}/log-parser-rules/drush
+    owner={{jenkins_user}}
+    group={{jenkins_group}}
+    mode=0744
+  sudo: yes
+  when: '"jenkins" in installed_extras'

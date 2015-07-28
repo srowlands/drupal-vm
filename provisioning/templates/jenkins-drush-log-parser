@@ -1,0 +1,7 @@
+warning /\[warning\]/
+error /\[error\]/
+info /\[completed\]/
+info /\[success\]/
+info /\[ok\]/
+
+error /Processed 0/

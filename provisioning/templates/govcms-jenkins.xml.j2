@@ -1,0 +1,182 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>{{ jenkins_description }}</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.11.3">
+      <projectUrl>{{ jenkins_github_url }}</projectUrl>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.3.5">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <refspec>+refs/pull/*:refs/remotes/origin/pr/*</refspec>
+        <url>{{ jenkins_github_repo }}</url>
+        <credentialsId>git</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>${sha1}</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+        <relativeTargetDir>new_pull_request</relativeTargetDir>
+      </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+    </extensions>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <org.jenkinsci.plugins.ghprb.GhprbTrigger plugin="ghprb@1.20">
+      <spec>H/5 * * * *</spec>
+      <adminlist>srowlands</adminlist>
+      <allowMembersOfWhitelistedOrgsAsAdmin>false</allowMembersOfWhitelistedOrgsAsAdmin>
+      <orgslist></orgslist>
+      <cron>H/5 * * * *</cron>
+      <triggerPhrase>test this</triggerPhrase>
+      <onlyTriggerPhrase>false</onlyTriggerPhrase>
+      <useGitHubHooks>true</useGitHubHooks>
+      <permitAll>false</permitAll>
+      <commentFilePath></commentFilePath>
+      <whitelist></whitelist>
+      <autoCloseFailedPullRequests>false</autoCloseFailedPullRequests>
+      <displayBuildErrorsOnDownstreamBuilds>false</displayBuildErrorsOnDownstreamBuilds>
+      <whiteListTargetBranches>
+        <org.jenkinsci.plugins.ghprb.GhprbBranch>
+          <branch></branch>
+        </org.jenkinsci.plugins.ghprb.GhprbBranch>
+      </whiteListTargetBranches>
+      <msgSuccess>Sweet, built like a champion!
+
+Visit PR environment here: &lt;a href=&quot;http://$ghprbPullId.stage.{{ drupal_domain }}&quot;&gt;http://$ghprbPullId.stage.{{ drupal_domain }}&lt;/a&gt;</msgSuccess>
+      <msgFailure>The build environment failed.</msgFailure>
+      <commitStatusContext></commitStatusContext>
+      <project>govcms_pull_request_builder</project>
+    </org.jenkinsci.plugins.ghprb.GhprbTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/usr/bin/env bash
+set -e
+
+# Jenkins job script for use with the Jenkins Github Drupal, which can be found
+# at https://github.com/Lullabot/jenkins_github_drupal. NOTE, all shell scripts
+# have been symlinked to /usr/local/bin to make them easier to call here. For
+# example:
+# ln -s /usr/local/share/jenkins_github_drupal/prepare_dir.sh \
+#   /usr/local/bin/jgd-prepare-dir
+
+# Since the pull request builder doesn&apos;t give us the pull request ID as an
+# environment variable, we need $sha1 to be of the format origin/pr/[0-9]/merge,
+# so that we can grep out the Pull Request ID. 
+if [[ $sha1 == origin/pr* ]]; then
+  ISSUE_NUMBER=${sha1//[^0-9]/}
+else
+  echo &quot;sha1 must be in the format origin/pr/[0-9]/merge.&quot; 1&gt;&amp;2
+  exit 1;
+fi
+
+# If you&apos;re using something like the Description Setter plugin, you can use this
+# line to set the build description. Just set your regex to \[BUILD\] (.*)
+echo &quot;[BUILD] Pull Request #$ISSUE_NUMBER&quot;
+
+# Location of the parent directory of the web root this site will be hosted at.
+# Defaults to the job workspace. Note, the Jenkins user must have write 
+# permissions to this directory.
+WEBROOT=/var/www/pull-requests/stage.{{ drupal_domain }}
+
+# Test whether this pull request already exists.
+EXISTING=false
+if [[ -L $WEBROOT/$ISSUE_NUMBER ]]; then
+  EXISTING=true
+fi
+
+
+# Install govCMS into the webroot (if there is no docroot)
+ACTUAL_DIR=${WORKSPACE}/${ISSUE_NUMBER}-actual
+DOCROOT_DIR=${ACTUAL_DIR}/docroot
+if [ ! -d &quot;$DOCROOT_DIR&quot; ]; then
+    printf &apos;%s\n&apos; &quot;Setting up govCMS for first time build ($DOCROOT_DIR)&quot;
+    rm -rf &quot;$ACTUAL_DIR&quot;; mkdir $ACTUAL_DIR;
+    cd $ACTUAL_DIR; git clone git@github.com:govCMS/govCMS.git .;
+    curl -sS https://getcomposer.org/installer | php
+    php $WEBROOT/composer.phar install --prefer-dist --working-dir=build
+    build/bin/phing -f build/phing/build.xml make:local
+fi
+
+# This does all the work of merging to master, and symlinking the directory to
+# the webroot specified above.
+/usr/local/bin/jgd-prepare-dir -i $ISSUE_NUMBER $WEBROOT
+
+# The apache or web group on the server, used to chgrp the files directory
+# appropriately after rsyncing.
+WEBGROUP=&quot;www-data&quot;
+
+# The drush alias of the site you are cloning. Typically, this is your staging
+# site. Do NOT use a production site here.
+ALIAS=&quot;@{{ drupal_domain }}&quot;
+
+# The parent URL that the destination site will be visible at. Defaults to
+# &apos;http://default&apos;. The domain name the site will be set up at. Note, the site
+# will be in a subdirectory of this domain using the Pull Request ID, so if the
+# Pull Request ID is 234, and you pass https://www.example.com/foo, the site
+# will be at https://www.example.com/foo/234. You can get around that with URL
+# rewriting in your webserver such that pr.234.example.com points to your site.
+URL=http://{{ drupal_domain }}
+
+# Execute the actual command to clone the site.
+/usr/local/bin/jgd-clone-site -i $ISSUE_NUMBER -l $WEBROOT -g $WEBGROUP $ALIAS $URL
+
+# Comment on github with a URL to the new environment below:
+BODY=&quot;This pull request&apos;s testing environment is ready at $URL/$ISSUE_NUMBER&quot;
+# If the environment already existed, just comment that it has been updated.
+if $EXISTING; then
+  BODY=&quot;The testing environment has been updated with the latest code.&quot;
+fi
+# The Github Organization or User and Repo name.
+GITHUB_ACCOUNT_REPO=&quot;{{ jenkins_github_stub }}&quot;
+# Github token for the bot user. It is recommended to use the Jenkins EnvInject
+# Plugin, and use the Inject Passwords option in your job, rather than
+# specificying this here.
+#GITHUB_TOKEN
+/usr/local/bin/jgd-github-comment -a $GITHUB_ACCOUNT_REPO -i $ISSUE_NUMBER -b &quot;$BODY&quot; &lt;&lt;&lt; $GITHUB_TOKEN</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.logparser.LogParserPublisher plugin="log-parser@1.0.8">
+      <unstableOnWarning>true</unstableOnWarning>
+      <failBuildOnError>true</failBuildOnError>
+      <parsingRulesPath>{{ jenkins_home }}/log-parser-rules/drush</parsingRulesPath>
+    </hudson.plugins.logparser.LogParserPublisher>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.ansicolor.AnsiColorBuildWrapper plugin="ansicolor@0.4.1">
+      <colorMapName>xterm</colorMapName>
+    </hudson.plugins.ansicolor.AnsiColorBuildWrapper>
+    <EnvInjectPasswordWrapper plugin="envinject@1.91.2">
+      <injectGlobalPasswords>true</injectGlobalPasswords>
+      <maskPasswordParameters>true</maskPasswordParameters>
+      <passwordEntries>
+        <EnvInjectPasswordEntry>
+          <name>GITHUB_TOKEN</name>
+          <value>{{ jenkins_github_token }}</value>
+        </EnvInjectPasswordEntry>
+      </passwordEntries>
+    </EnvInjectPasswordWrapper>
+    <com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper plugin="ssh-agent@1.6">
+      <credentialIds>
+        <string>git</string>
+      </credentialIds>
+      <ignoreMissing>false</ignoreMissing>
+    </com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper>
+  </buildWrappers>
+</project>

@@ -12,6 +12,7 @@ vagrant_ip: 192.168.88.88
 
 # A list of synced folders, with the keys 'local_path', 'destination', 'id', and
 # a 'type' of [nfs|rsync|smb] (leave empty for slow native shares). See
+
 # https://github.com/geerlingguy/drupal-vm/wiki/Syncing-Folders for more info.
 vagrant_synced_folders:
   # The first synced folder will be used for the default Drupal installation, if
@@ -23,7 +24,7 @@ vagrant_synced_folders:
     create: true
 
 # Memory and CPU to use for this VM.
-vagrant_memory: 1024
+vagrant_memory: 2048
 vagrant_cpus: 4
 
 # Set this to false if you are using a different site deployment strategy and
@@ -91,6 +92,7 @@ mysql_users:
 # to install *any* extras, make set this value to an empty set, e.g. `[]`.
 installed_extras:
   - adminer
+  - jenkins
   - mailhog
   - memcached
   - pimpmylog
@@ -116,6 +118,7 @@ firewall_allowed_tcp_ports:
   - "81"
   - "443"
   - "4444"
+  - "8000"
   - "8025"
   - "8080"
   - "8443"
@@ -172,3 +175,27 @@ solr_xmx: "128M"
 
 # Selenium configuration
 selenium_version: 2.46.0
+
+# Jenkins configuration.
+jenkins_http_host: "{{ vagrant_ip }}"
+jenkins_jobs:
+  - name: "govcms_pull_request_builder"
+    template: templates/govcms-jenkins.xml.j2
+jenkins_plugins: 
+  - 'git'
+  - 'github-api'
+  - 'plain-credentials'
+  - 'token-macro'
+  - 'github'
+  - 'ssh-agent'
+  - 'build-flow-plugin'
+  - 'credentials'
+  - 'log-parser'
+  - 'envinject'
+  - 'ghprb'
+  - 'ansicolor'
+jenkins_github_repo: git@github.com:srowlands/govcms-autodeploy-test.git
+jenkins_github_url: https://github.com/srowlands/govcms-autodeploy-test
+jenkins_github_stub: srowlands/govcms-autodeploy-test
+jenkins_description: "govCMS pull request environment builder"
+jenkins_github_token: XXX

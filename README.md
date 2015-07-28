@@ -23,6 +23,7 @@ It will install the following on an Ubuntu 14.04 (by default) linux VM:
     - Adminer, for accessing databases directly
     - Pimp my Log, for easy viewing of log files
     - MailHog, for catching and debugging email
+    - Jenkins, for building Pull Request environments
 
 It should take 5-10 minutes to build or rebuild the VM from scratch on a decent broadband connection.
 
