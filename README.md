@@ -28,7 +28,7 @@ It will install the following on an Ubuntu 14.04 (by default) linux environment:
     - MailHog, for catching and debugging email
     - Jenkins, for building Pull Request environments
 
-It should take 5-10 minutes to build or rebuild the VM from scratch on a decent broadband connection.
+It should take 10-15 minutes to build or rebuild the VM from scratch on a decent broadband connection.
 
 ## Customizing the VM
 
@@ -70,7 +70,7 @@ This Quick Start Guide will help you quickly build a govCMS environment using th
       - Copy `example.config.vm-vmware.yml` to `config.yml`
   2. Create a local directory (default /var/www/govcms-vm) where govCMS will be installed. You may change this location in `config.yml` (`local_path`, inside `vagrant_synced_folders`).
   3. Open Terminal, cd to this directory (containing the `Vagrantfile` and this README file).
-  4. [Mac/Linux only] Install Ansible Galaxy roles required for this VM: `$ sudo ansible-galaxy install -r provisioning/requirements.txt --force`
+  4. [Mac/Linux only] Install Ansible Galaxy roles required for this VM: `$ sudo ansible-galaxy install -r provisioning/requirements.yml --force`
   5. Run `vagrant plugin install vagrant-hostmanager` to add entries to your hosts file for you
   5. Type in `vagrant up`, and let Vagrant do its magic.
   6. Once complete open your browser and access [http://govcms.dev/](http://govcms.dev/). The default login for this admin account is `admin` for both username and password.
@@ -119,9 +119,22 @@ If you don't want or need one or more of these extras, just delete them or comme
 
 ## Install on a remote AWS server (include CI with Jenkins)
 
+This will install Jenkins and pre-configure with a pull-request environment builder, which will:
+  - Monitor GitHub repository of your choosing for new Pull Requests
+  - Clone the current master dev database & files into a new environment with PR code merged into master
+  - Comment on Pull Requests with a success/fail message and link to new PR environment
+
+It makes the following assumptions:
+  - Your GitHub repository contains a Drupal theme folder at the root of the repository.
+
   1. Perform the same steps as above, but copy the `example.config.aws-jenkins.yml` file instead at step 5.
-  2. Once complete, visit http://govcms.dev:8000/ in a browser.
-  3. @todo: complete CI config steps
+  2. Create a new GitHub repo to house the govCMS site theme.
+  3. Create a new GitHub 'bot' user and configure.
+    - Add SSH key to allow communication between Jenkins and GitHub (https://github.com/settings/ssh).
+    - Generate a new Personal access token (https://github.com/settings/tokens/new).
+    - The user needs to have administrator rights for your repository (must be owner (user repo) or must have Push, Pull & Administrative rights (organization repo))
+  4. Once complete, visit http://govcms.dev:8000/ in a browser.
+  5. @todo: complete CI config steps
 
 
 ## License
