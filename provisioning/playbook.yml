@@ -25,6 +25,7 @@
     - { role: geerlingguy.drupal-console, when: drupal_major_version > 7 }
 
     # Conditionally-installed roles.
+    - { role: Stouts.jenkins, develop, sudo: yes, when: '"jenkins" in installed_extras' }
     - { role: geerlingguy.memcached, when: '"memcached" in installed_extras' }
     - { role: geerlingguy.php-memcached, when: '"memcached" in installed_extras' }
     - { role: geerlingguy.php-xdebug, when: '"xdebug" in installed_extras' }
@@ -46,6 +47,7 @@
       stat: "path={{ drupal_core_path }}/index.php"
       register: drupal_site
 
+    - include: tasks/jenkins.yml
     - include: tasks/extras.yml
     - include: tasks/www.yml
     - include: tasks/apparmor.yml
