@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/srowlands/govcms-drupal-vm/master/docs/images/govcms-devkit-logo.png" alt="Drupal VM Logo" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/srowlands/govcms-devkit/master/docs/images/govcms-devkit-logo.png" alt="Drupal VM Logo" /></p>
 
 [![Build Status](https://travis-ci.org/srowlands/govcms-devkit.svg?branch=master)](https://travis-ci.org/srowlands/govcms-devkit) [![Documentation Status](https://readthedocs.org/projects/drupal-vm/badge/?version=latest)](http://docs.drupalvm.com)
 
