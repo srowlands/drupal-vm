@@ -1,12 +1,20 @@
 ---
-- name: Ensure drupal_core_path directory exists.
+- name: Ensure drupal_core_path directory exists (sync enabled).
+  file:
+    path: "{{ drupal_core_path }}"
+    state: directory
+    mode: 0775
+  sudo: yes
+  when: drupal_site.stat.exists == false and {{ vagrant_sync_disable }} == false
+
+- name: Ensure drupal_core_path directory exists (sync disabled).
   file:
     path: "{{ drupal_core_path }}"
     state: directory
     mode: 0775
     owner: "{{ vagrant_user }}"
   sudo: yes
-  when: drupal_site.stat.exists == false
+  when: drupal_site.stat.exists == false and {{ vagrant_sync_disable }} == true
 
 - name: Generate Drupal site with drush makefile.
   command: >
