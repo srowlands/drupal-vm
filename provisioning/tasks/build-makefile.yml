@@ -4,7 +4,8 @@
     path: "{{ drupal_core_path }}"
     state: directory
     mode: 0775
-  sudo: no
+    owner: "{{ vagrant_user }}"
+  sudo: yes
   when: drupal_site.stat.exists == false
 
 - name: Generate Drupal site with drush makefile.
