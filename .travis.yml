@@ -10,6 +10,9 @@ install:
   - "{ echo '[defaults]'; echo 'roles_path = ../'; } >> ansible.cfg"
 
 script:
+  # Copy example files into place.
+  - cp example.config.vm.yml config.yml
+
   # Make sure Ansible requirements install correctly.
   - 'ansible-galaxy install -r provisioning/requirements.yml'
 
