@@ -63,4 +63,5 @@
 
     - include: tasks/drush-aliases.yml
     - include: tasks/drush-stage-file-proxy.yml
+    - include: tasks/drush-shield.yml
     - include: tasks/cron.yml
