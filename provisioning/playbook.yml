@@ -25,7 +25,6 @@
     - { role: geerlingguy.drupal-console, when: drupal_major_version > 7 }
 
     # Conditionally-installed roles.
-    - { role: Stouts.jenkins, develop, sudo: yes, when: '"jenkins" in installed_extras' }
     - { role: geerlingguy.memcached, when: '"memcached" in installed_extras' }
     - { role: geerlingguy.php-memcached, when: '"memcached" in installed_extras' }
     - { role: geerlingguy.php-xdebug, when: '"xdebug" in installed_extras' }
@@ -38,6 +37,7 @@
     - { role: arknoll.selenium, when: '"selenium" in installed_extras' }
     - { role: geerlingguy.solr, when: '"solr" in installed_extras' }
     - { role: geerlingguy.varnish, when: '"varnish" in installed_extras' }
+    - { role: Stouts.jenkins, develop, sudo: yes, when: '"jenkins" in installed_extras' }
 
     # Roles for security and stability on production.
     - { role: geerlingguy.security, when: extra_security_enabled }
@@ -62,4 +62,5 @@
       when: install_site
 
     - include: tasks/drush-aliases.yml
+    - include: tasks/drush-stage-file-proxy.yml
     - include: tasks/cron.yml

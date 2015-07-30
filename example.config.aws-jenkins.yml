@@ -51,6 +51,10 @@ drupal_mysql_user: drupal
 drupal_mysql_password: drupal
 drupal_mysql_database: drupal
 
+# Stage File Proxy URL
+# Provide an optional URL to proxy files to a remote location.
+# drupal_stage_file_proxy_url: "https://production-url.com"
+
 # Cron jobs are added to the root user's crontab. Keys include name (required),
 # minute, hour, day, weekday, month, job (required), and state.
 drupalvm_cron_jobs: []

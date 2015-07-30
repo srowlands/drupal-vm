@@ -1,0 +1,14 @@
+---
+- name: Enable Stage File Proxy
+  command: >
+    {{ drush_path }} pm-enable -y stage_file_proxy
+    chdir={{ drupal_core_path }}
+  when: drupal_stage_file_proxy_url is defined
+  sudo: no
+
+- name: Configure Stage File Proxy
+  command: >
+    {{ drush_path }} variable-set stage_file_proxy_origin {{ drupal_stage_file_proxy_url }} -y
+    chdir={{ drupal_core_path }}
+  when: drupal_stage_file_proxy_url is defined
+  sudo: no
