@@ -22,4 +22,5 @@ projects:
 
   # Other modules.
   devel: "1.x-dev"
+  stage_file_proxy: "1.7"
 
