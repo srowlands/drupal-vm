@@ -20,6 +20,9 @@
   when: "'Successful' not in drupal_site_installed.stdout"
   sudo: no
 
+- name: Create a writable files directory for current drupal site.
+  file: path={{ drupal_core_path }}/sites/{{ drupal_site_directory }}/files state=directory owner=www-data group=www-data mode=0775
+
 - name: Install configured modules with drush.
   command: >
     {{ drush_path }} pm-enable -y {{ drupal_enable_modules | join(" ") }}
