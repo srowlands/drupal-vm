@@ -120,7 +120,7 @@ extra_packages: [ 'unzip' ]
 # You can configure almost anything else on the server in the rest of this file.
 extra_security_enabled: false
 
-drush_version: master
+drush_version: 6.6.0
 drush_keep_updated: true
 
 firewall_allowed_tcp_ports:
