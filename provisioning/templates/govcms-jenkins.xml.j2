@@ -4,11 +4,11 @@
   <description>{{ jenkins_description }}</description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.11.3">
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.12.0">
       <projectUrl>{{ jenkins_github_url }}</projectUrl>
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.3.5">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.0">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
@@ -35,17 +35,18 @@
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
-    <org.jenkinsci.plugins.ghprb.GhprbTrigger plugin="ghprb@1.20">
+    <org.jenkinsci.plugins.ghprb.GhprbTrigger plugin="ghprb@1.26.2">
       <spec>H/5 * * * *</spec>
+      <configVersion>1</configVersion>
       <adminlist>srowlands</adminlist>
       <allowMembersOfWhitelistedOrgsAsAdmin>false</allowMembersOfWhitelistedOrgsAsAdmin>
       <orgslist></orgslist>
       <cron>H/5 * * * *</cron>
       <triggerPhrase>test this</triggerPhrase>
+      <buildDescTemplate></buildDescTemplate>
       <onlyTriggerPhrase>false</onlyTriggerPhrase>
       <useGitHubHooks>true</useGitHubHooks>
       <permitAll>false</permitAll>
-      <commentFilePath></commentFilePath>
       <whitelist></whitelist>
       <autoCloseFailedPullRequests>false</autoCloseFailedPullRequests>
       <displayBuildErrorsOnDownstreamBuilds>false</displayBuildErrorsOnDownstreamBuilds>
@@ -54,12 +55,31 @@
           <branch></branch>
         </org.jenkinsci.plugins.ghprb.GhprbBranch>
       </whiteListTargetBranches>
-      <msgSuccess>Sweet, built like a champion!
-
-Visit PR environment here: &lt;a href=&quot;http://$ghprbPullId.stage.{{ drupal_domain }}&quot;&gt;http://$ghprbPullId.stage.{{ drupal_domain }}&lt;/a&gt;</msgSuccess>
-      <msgFailure>The build environment failed.</msgFailure>
-      <commitStatusContext></commitStatusContext>
       <project>govcms_pull_request_builder</project>
+      <__project class="project" reference="../../.."/>
+      <gitHubAuthId></gitHubAuthId>
+      <extensions>
+        <org.jenkinsci.plugins.ghprb.extensions.status.GhprbSimpleStatus>
+          <commitStatusContext></commitStatusContext>
+          <triggeredStatus></triggeredStatus>
+          <startedStatus></startedStatus>
+          <statusUrl></statusUrl>
+        </org.jenkinsci.plugins.ghprb.extensions.status.GhprbSimpleStatus>
+        <org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildStatus>
+          <messages>
+            <org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+              <message>The build environment failed.</message>
+              <result>FAILURE</result>
+            </org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+            <org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+              <message>Sweet, built like a champion!
+
+Visit PR environment here: &lt;a href=&quot;http://$ghprbPullId.stage.{{ drupal_domain }}&quot;&gt;http://$ghprbPullId.stage.{{ drupal_domain }}&lt;/a&gt;</message>
+              <result>SUCCESS</result>
+            </org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+          </messages>
+        </org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildStatus>
+      </extensions>
     </org.jenkinsci.plugins.ghprb.GhprbTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
@@ -68,16 +88,12 @@ Visit PR environment here: &lt;a href=&quot;http://$ghprbPullId.stage.{{ drupal_
       <command>#!/usr/bin/env bash
 set -e
 
-# Jenkins job script for use with the Jenkins Github Drupal, which can be found
-# at https://github.com/Lullabot/jenkins_github_drupal. NOTE, all shell scripts
-# have been symlinked to /usr/local/bin to make them easier to call here. For
-# example:
-# ln -s /usr/local/share/jenkins_github_drupal/prepare_dir.sh \
-#   /usr/local/bin/jgd-prepare-dir
+# Jenkins job script based on the Jenkins Github Drupal, which can be found
+# at https://github.com/Lullabot/jenkins_github_drupal.
 
 # Since the pull request builder doesn&apos;t give us the pull request ID as an
 # environment variable, we need $sha1 to be of the format origin/pr/[0-9]/merge,
-# so that we can grep out the Pull Request ID. 
+# so that we can grep out the Pull Request ID.
 if [[ $sha1 == origin/pr* ]]; then
   ISSUE_NUMBER=${sha1//[^0-9]/}
 else
@@ -90,16 +106,20 @@ fi
 echo &quot;[BUILD] Pull Request #$ISSUE_NUMBER&quot;
 
 # Location of the parent directory of the web root this site will be hosted at.
-# Defaults to the job workspace. Note, the Jenkins user must have write 
+# Defaults to the job workspace. Note, the Jenkins user must have write
 # permissions to this directory.
 WEBROOT=/var/www/pull-requests/stage.{{ drupal_domain }}
+
+# Test whether the webroot exists.
+if [ ! -d &quot;$WEBROOT&quot; ]; then
+  mkdir -p $WEBROOT;
+fi
 
 # Test whether this pull request already exists.
 EXISTING=false
 if [[ -L $WEBROOT/$ISSUE_NUMBER ]]; then
   EXISTING=true
 fi
-
 
 # Install govCMS into the webroot (if there is no docroot)
 ACTUAL_DIR=${WORKSPACE}/${ISSUE_NUMBER}-actual
@@ -109,14 +129,46 @@ if [ ! -d &quot;$DOCROOT_DIR&quot; ]; then
     rm -rf &quot;$ACTUAL_DIR&quot;; mkdir $ACTUAL_DIR;
     cd $ACTUAL_DIR; git clone git@github.com:govCMS/govCMS.git .;
     curl -sS https://getcomposer.org/installer | php
-    php $WEBROOT/composer.phar install --prefer-dist --working-dir=build
+    php composer.phar install --prefer-dist --working-dir=build
     build/bin/phing -f build/phing/build.xml make:local
 fi
 
-# This does all the work of merging to master, and symlinking the directory to
-# the webroot specified above.
-/usr/local/bin/jgd-prepare-dir -i $ISSUE_NUMBER $WEBROOT
+MERGE_BRANCH=&quot;master&quot;
 
+# This is the directory of the checked out pull request, from Jenkins.
+ORIGINAL_DIR=&quot;${WORKSPACE}/new_pull_request&quot;
+# The directory where the checked out pull request will reside.
+ACTUAL_DIR=&quot;${WORKSPACE}/${ISSUE_NUMBER}-actual/docroot/sites/all/themes&quot;
+# The directory where the docroot will be symlinked to.
+DOCROOT=$WEBROOT/$ISSUE_NUMBER
+# The command will attempt to merge master with the pull request.
+BRANCH=&quot;jenkins-pull-request-$ISSUE_NUMBER&quot;
+
+# Remove the existing .git dir if it exists.
+rm -rf $ACTUAL_DIR/.git
+# Copy the new_pull_request directory.
+rsync -a ${ORIGINAL_DIR}/ $ACTUAL_DIR
+# Now remove the new_pull_request directory.
+rm -rf $ORIGINAL_DIR
+# Create a symlink to the docroot, if it doesn&apos;t already exist.
+if [ ! -h $DOCROOT -a -d $ACTUAL_DIR ];
+then
+  ln -sf ${WORKSPACE}/${ISSUE_NUMBER}-actual/docroot $DOCROOT
+fi
+
+cd ${ACTUAL_DIR}
+git checkout -b $BRANCH
+# Clean out any untracked files and directories.
+git clean -d -f
+# Now checkout the merge branch.
+git checkout $MERGE_BRANCH
+git pull
+git merge $BRANCH -m &quot;Jenkins test merge into master.&quot;
+
+echo &quot;Checked out a new branch for this pull request, and merged it to $MERGE_BRANCH.&quot;
+
+
+######
 # The apache or web group on the server, used to chgrp the files directory
 # appropriately after rsyncing.
 WEBGROUP=&quot;www-data&quot;
@@ -125,16 +177,72 @@ WEBGROUP=&quot;www-data&quot;
 # site. Do NOT use a production site here.
 ALIAS=&quot;@{{ drupal_domain }}&quot;
 
-# The parent URL that the destination site will be visible at. Defaults to
-# &apos;http://default&apos;. The domain name the site will be set up at. Note, the site
-# will be in a subdirectory of this domain using the Pull Request ID, so if the
-# Pull Request ID is 234, and you pass https://www.example.com/foo, the site
-# will be at https://www.example.com/foo/234. You can get around that with URL
-# rewriting in your webserver such that pr.234.example.com points to your site.
+####### CLONE SITE
+SOURCE=$ALIAS
 URL=http://{{ drupal_domain }}
+CLONE=database
 
-# Execute the actual command to clone the site.
-/usr/local/bin/jgd-clone-site -i $ISSUE_NUMBER -l $WEBROOT -g $WEBGROUP $ALIAS $URL
+# Put drush in verbose mode, if requested, and include our script dir so we have
+# access to our custom drush commands.
+DRUSH=&quot;drush --include=/var/lib/jenkins/.drush&quot;
+
+# The docroot of the new Drupal directory.
+DOCROOT=$WEBROOT/$ISSUE_NUMBER
+# The base prefix to use for the database tables.
+PREFIX=&quot;pr_&quot;
+# The unique prefix to use for just this pull request.
+DB_PREFIX=&quot;${PREFIX}${ISSUE_NUMBER}_&quot;
+DB_SUFFIX=&quot;_${ISSUE_NUMBER}&quot;
+# The drush options for the Drupal destination site. Eventually, we could open
+# this up to allow users to specify a drush site alias, but for now, we&apos;ll just
+# manually specify the root and uri options.
+DESTINATION=&quot;--root=$DOCROOT --uri=$URL&quot;
+
+# Check to make sure drush is working properly, and can access the source site.
+$DRUSH $SOURCE status --quiet
+
+if [ &quot;$CLONE&quot; == &quot;database&quot; ]; then
+  # Copy the existing settings.php to the new site, but add a database name suffix.
+  $DRUSH $DESTINATION --yes $EXTRA_SETTINGS --database clone-settings-php $SOURCE $DB_SUFFIX
+
+  # Copy the database to the new location
+  $DRUSH $DESTINATION sql-sync --create-db --yes $SOURCE @self
+else
+  # Copy the existing settings.php to the new site, but add a database prefix.
+  $DRUSH $DESTINATION --yes $EXTRA_SETTINGS clone-settings-php $SOURCE $DB_PREFIX
+
+  # Drop all database tables with this prefix first, in case the environment is
+  # being rebuilt, and new tables were created in the environment.
+  $DRUSH $SOURCE --yes drop-prefixed-tables $DB_PREFIX
+
+  # Copy all the database tables, using the new prefix.
+  $DRUSH $SOURCE --yes clone-db-prefix $DB_PREFIX $PREFIX
+fi
+
+# If we have the registry-rebuild command available, let&apos;s go ahead and use it
+# first. If modules or classes have changed names or directories, then the
+# following drush commands will fail.
+if [[ -n `eval $DRUSH $DESTINATION help --pipe | grep registry-rebuild` ]]; then
+  eval $DRUSH $DESTINATION registry-rebuild
+fi
+
+# Now, rsync the files over. If we have a webgroup, set the sticky bit on the
+# directory before rsyncing. We then rsync with --no-p, --no-o, and
+# --omit-dir-times, to avoid errors. There are dynamically created directories
+# we can exclude as well, such as css, js, styles, etc.
+if [[ $WEBGROUP ]]; then
+  DESTINATION_FILES=`$DRUSH $DESTINATION dd files`
+  mkdir -p -m 2775 &quot;$DESTINATION_FILES&quot;
+  #chmod 775 $DESTINATION_FILES
+  #sudo chgrp $WEBGROUP $DESTINATION_FILES
+fi
+$DRUSH $DESTINATION -y rsync $HARDLINKS \
+  $SOURCE:%files @self:%files \
+  --omit-dir-times --no-p --no-o \
+  --exclude-paths=&quot;css:js:styles:imagecache:ctools:tmp&quot;
+
+
+# @todo: Drop the rsync and rely on stage_file_proxy
 
 # Comment on github with a URL to the new environment below:
 BODY=&quot;This pull request&apos;s testing environment is ready at $URL/$ISSUE_NUMBER&quot;
@@ -147,22 +255,47 @@ GITHUB_ACCOUNT_REPO=&quot;{{ jenkins_github_stub }}&quot;
 # Github token for the bot user. It is recommended to use the Jenkins EnvInject
 # Plugin, and use the Inject Passwords option in your job, rather than
 # specificying this here.
-#GITHUB_TOKEN
-/usr/local/bin/jgd-github-comment -a $GITHUB_ACCOUNT_REPO -i $ISSUE_NUMBER -b &quot;$BODY&quot; &lt;&lt;&lt; $GITHUB_TOKEN</command>
+
+# Ensure curl exists.
+command -v curl &gt;/dev/null 2&gt;&amp;1 || {
+  echo &gt;&amp;2 &quot;You must have cURL installed for this command to work properly.&quot;;
+  exit 1;
+}
+
+URL=&quot;https://api.github.com/repos/$GITHUB_ACCOUNT_REPO/issues/$ISSUE_NUMBER/comments&quot;
+PUBLIC_URL=&quot;http://github.com/$GITHUB_ACCOUNT_REPO/issues/$ISSUE_NUMBER&quot;
+# Escape all single quotes.
+BODY=${BODY//\&apos;/\\\&apos;}
+# Encode to json. PHP makes this pretty easy. Maybe there&apos;s something better?
+DATA=`php -r &quot;print json_encode(array(&apos;body&apos; =&gt; &apos;$BODY&apos;));&quot;`
+# Now make the actual call to github.
+OUTPUT=`curl -H &quot;Authorization: token $GITHUB_TOKEN&quot; -d &quot;$DATA&quot; $URL`
+# Escape all single quotes again.
+OUTPUT=${OUTPUT//\&apos;/\\\&apos;}
+# Check for errors
+ERROR=`php -r &quot;\\$json = json_decode(&apos;$OUTPUT&apos;); isset(\\$json-&gt;message) ? print \\$json-&gt;message : NULL;&quot;`
+
+if [[ -z $ERROR ]]; then
+  echo &quot;Comment posted successfully to $PUBLIC_URL.&quot;
+  exit 0
+fi
+
+echo &quot;Failed to post comment. Reason: $ERROR.&quot;
+exit 1</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
     <hudson.plugins.logparser.LogParserPublisher plugin="log-parser@1.0.8">
       <unstableOnWarning>true</unstableOnWarning>
       <failBuildOnError>true</failBuildOnError>
-      <parsingRulesPath>{{ jenkins_home }}/log-parser-rules/drush</parsingRulesPath>
+      <parsingRulesPath></parsingRulesPath>
     </hudson.plugins.logparser.LogParserPublisher>
   </publishers>
   <buildWrappers>
     <hudson.plugins.ansicolor.AnsiColorBuildWrapper plugin="ansicolor@0.4.1">
       <colorMapName>xterm</colorMapName>
     </hudson.plugins.ansicolor.AnsiColorBuildWrapper>
-    <EnvInjectPasswordWrapper plugin="envinject@1.91.2">
+    <EnvInjectPasswordWrapper plugin="envinject@1.91.3">
       <injectGlobalPasswords>true</injectGlobalPasswords>
       <maskPasswordParameters>true</maskPasswordParameters>
       <passwordEntries>
@@ -172,7 +305,7 @@ GITHUB_ACCOUNT_REPO=&quot;{{ jenkins_github_stub }}&quot;
         </EnvInjectPasswordEntry>
       </passwordEntries>
     </EnvInjectPasswordWrapper>
-    <com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper plugin="ssh-agent@1.6">
+    <com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper plugin="ssh-agent@1.7">
       <credentialIds>
         <string>git</string>
       </credentialIds>

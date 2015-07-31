@@ -47,7 +47,6 @@
       stat: "path={{ drupal_core_path }}/index.php"
       register: drupal_site
 
-    - include: tasks/jenkins.yml
     - include: tasks/extras.yml
     - include: tasks/www.yml
     - include: tasks/apparmor.yml
@@ -65,3 +64,4 @@
     - include: tasks/drush-stage-file-proxy.yml
     - include: tasks/drush-shield.yml
     - include: tasks/cron.yml
+    - include: tasks/jenkins.yml

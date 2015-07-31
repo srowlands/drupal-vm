@@ -18,3 +18,42 @@
     mode=0744
   sudo: yes
   when: '"jenkins" in installed_extras'
+
+- name: Create pull-requests web folder.
+  file: >
+    path=/var/www/pull-requests
+    state=directory
+    owner={{jenkins_user}}
+    group={{jenkins_group}}
+    mode=0775
+  sudo: yes
+  when: '"jenkins" in installed_extras'
+
+- name: Copy drush aliases into ~jenkins username.
+  copy: >
+    src={{item}}
+    dest={{jenkins_home}}/.drush/
+    owner={{jenkins_user}}
+    group={{jenkins_group}}
+    mode=0744
+  sudo: yes
+  with_fileglob: /home/{{vagrant_user}}/.drush/*.aliases.drushrc.php
+  when: '"jenkins" in installed_extras'
+
+- name: Create site domain symlink to default in Drupal root.
+  file: >
+    src={{drupal_core_path}}/sites/default
+    dest={{drupal_core_path}}/sites/{{drupal_domain}}
+    owner=www-data
+    group=www-data
+    state=link
+  sudo: yes
+  when: '"jenkins" in installed_extras'
+
+- name: Download custom Drush commands.
+  get_url:
+    url="https://raw.githubusercontent.com/Lullabot/jenkins_github_drupal/master/jgd.drush.inc"
+    dest="{{jenkins_home}}/.drush/"
+    mode=0775
+  sudo: yes
+  when: '"jenkins" in installed_extras'
