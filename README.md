@@ -35,7 +35,7 @@ It should take 10-15 minutes to build or rebuild the VM from scratch on a decent
 This codebase comes with preconfigured config files for the govCMS distribution. There are a couple places where you can customize the VM for your needs:
 
   - `config.yml`: Contains variables like the VM domain name and IP address, PHP and MySQL configuration, etc.
-  - `drupal.make.yml`: Contains configuration for the Drupal core version, modules, and patches that will be downloaded on Drupal's initial installation (more about [Drush make files](https://www.drupal.org/node/1432374)).
+  - `drupal.make`: Contains configuration for the Drupal core version, modules, and patches that will be downloaded on Drupal's initial installation (more about [Drush make files](https://www.drupal.org/node/1432374)).
 
 ## Quick Start Guide
 
