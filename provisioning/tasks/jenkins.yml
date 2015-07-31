@@ -29,13 +29,23 @@
   sudo: yes
   when: '"jenkins" in installed_extras'
 
+- name: Create .drush folder in ~jenkins username.
+  file: >
+    path={{jenkins_home}}/.drush
+    state=directory
+    owner={{jenkins_user}}
+    group={{jenkins_group}}
+    mode=0775
+  sudo: yes
+  when: '"jenkins" in installed_extras'
+
 - name: Copy drush aliases into ~jenkins username.
   copy: >
     src={{item}}
     dest={{jenkins_home}}/.drush/
     owner={{jenkins_user}}
     group={{jenkins_group}}
-    mode=0744
+    mode=0775
   sudo: yes
   with_fileglob: /home/{{vagrant_user}}/.drush/*.aliases.drushrc.php
   when: '"jenkins" in installed_extras'
