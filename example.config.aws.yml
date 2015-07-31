@@ -187,30 +187,6 @@ solr_xmx: "128M"
 # Selenium configuration
 selenium_version: 2.46.0
 
-# Jenkins configuration.
-jenkins_http_host: "0.0.0.0"
-jenkins_jobs:
-  - name: "govcms_pull_request_builder"
-    template: templates/govcms-jenkins.xml.j2
-jenkins_plugins:
-  - 'git'
-  - 'github-api'
-  - 'plain-credentials'
-  - 'token-macro'
-  - 'github'
-  - 'ssh-agent'
-  - 'build-flow-plugin'
-  - 'credentials'
-  - 'log-parser'
-  - 'envinject'
-  - 'ghprb'
-  - 'ansicolor'
-jenkins_github_repo: git@github.com:srowlands/govcms-autodeploy-test.git
-jenkins_github_url: https://github.com/srowlands/govcms-autodeploy-test
-jenkins_github_stub: srowlands/govcms-autodeploy-test
-jenkins_description: "govCMS pull request environment builder"
-jenkins_github_token: INSERT_GITHUB_TOKEN
-
 # AWS configuration.
 aws_access_key_id: "INSERT_AWS_ACCESS_KEY"
 aws_secret_key: "INSERT_AWS_SECRET_KEY"
