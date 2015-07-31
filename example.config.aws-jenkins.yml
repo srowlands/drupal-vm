@@ -55,6 +55,11 @@ drupal_mysql_database: drupal
 # Provide an optional URL to proxy files to a remote location.
 # drupal_stage_file_proxy_url: "https://production-url.com"
 
+# Shield configuration.
+drupal_shield_enabled: true
+drupal_shield_user: admin
+drupal_shield_password: password
+
 # Cron jobs are added to the root user's crontab. Keys include name (required),
 # minute, hour, day, weekday, month, job (required), and state.
 drupalvm_cron_jobs: []

@@ -1,0 +1,34 @@
+---
+- name: Enable Shield module
+  command: >
+    {{ drush_path }} pm-enable -y shield
+    chdir={{ drupal_core_path }}
+  when: "{{ drupal_shield_enabled }} == true"
+  sudo: no
+
+- name: Enable Shield module configuration
+  command: >
+    {{ drush_path }} variable-set shield_enabled 1 -y
+    chdir={{ drupal_core_path }}
+  when: "{{ drupal_shield_enabled }} == true"
+  sudo: no
+
+- name: Disable Shield module configuration
+  command: >
+    {{ drush_path }} variable-set shield_enabled 0 -y
+    chdir={{ drupal_core_path }}
+  when: "{{ drupal_shield_enabled }} == false"
+  sudo: no
+
+- name: Configure Shield username
+  command: >
+    {{ drush_path }} variable-set shield_user {{ drupal_shield_user }} -y
+    chdir={{ drupal_core_path }}
+  when: drupal_shield_user is defined and {{ drupal_shield_enabled }} == true
+  sudo: no
+
+- name: Configure Shield password
+  command: >
+    {{ drush_path }} variable-set shield_pass {{ drupal_shield_password }} -y
+    chdir={{ drupal_core_path }}
+  when: drupal_shield_password is defined and {{ drupal_shield_enabled }} == true
