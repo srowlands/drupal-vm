@@ -41,17 +41,17 @@ install_site: true
 # Settings for building a Drupal site from a makefile (if 'build_from_makefile'
 # is 'true').
 drupal_major_version: 7
-drupal_core_path: "/var/www/drupal"
-drupal_domain: "govcms.dev"
-drupal_site_name: "Drupal"
+drupal_core_path: /var/www/drupal
+drupal_domain: govcms.dev
+drupal_site_name: Drupal
+drupal_site_directory: default
 drupal_install_profile: govcms
-drupal_enable_modules: [ 'devel' ]
+drupal_enable_modules: [ devel ]
 drupal_account_name: admin
 drupal_account_pass: admin
 drupal_mysql_user: drupal
 drupal_mysql_password: drupal
 drupal_mysql_database: drupal
-
 # Stage File Proxy URL
 # Provide an optional URL to proxy files to a remote location.
 # drupal_stage_file_proxy_url: "https://production-url.com"
