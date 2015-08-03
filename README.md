@@ -153,11 +153,23 @@ In order to use the pre-configured Jenkins pull-request environment builder you 
 
   6. Prepare Jenkins
     - [RECOMMENDED] Configure Jenkins security to avoid non-authenticated access.
+    - Go to the [credentials management screen](http://govcms.dev:8000/credential-store/).
+    - Click 'Add domain'
+      - enter 'api.github.com' for Domain Name
+      - add > Hostname > api.github.com
+      - add > URI scheme > https
+    - Click 'OK', then 'Add Credentials'
+      - select 'Secret text' type
+      - paste GitHub token into Secret field, and a useful description
+    - Go to the [configure system screen](http://govcms.dev:8000/configure).
+    - Under 'GitHub Pull Request Builder' select your token credential from the dropdown.
     - Go to the [job configuration screen](http://govcms.dev:8000/job/govcms_pull_request_builder/configure).
-    - Under "Source Code Management" section add credentials (SSH Username with private key).
+    - Under 'Source Code Management' section add credentials (SSH Username with private key).
       - This should be the SSH key allocated to the 'bot' user above. Remember to enter the passphrase if you entered one when generating.
-    - Under "Build Environment > SSH Agent Credentials" select the same credentials created above.
-    - Under "Build Environment > Job Passwords" paste the token value into the `GITHUB_TOKEN` password field.
+    - Under 'Build Environment > SSH Agent Credentials' select the same credentials created above.
+    - Under 'Build Environment > Job Passwords' paste the token value into the `GITHUB_TOKEN` password field.
+    - Go to your GitHub repo > Settings > Webhooks & Services and ensure a new webhook has been created.
+      - Click the 'edit' icon and update the IP address to match the EC2 elastic IP.
 
 
 ## License
