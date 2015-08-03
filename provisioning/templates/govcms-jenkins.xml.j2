@@ -231,8 +231,7 @@ fi
 if [[ $WEBGROUP ]]; then
   DESTINATION_FILES=`$DRUSH $DESTINATION dd files`
   mkdir -p -m 2775 &quot;$DESTINATION_FILES&quot;
-  #chmod 775 $DESTINATION_FILES
-  #sudo chgrp $WEBGROUP $DESTINATION_FILES
+  chmod 777 $DESTINATION_FILES
 fi
 $DRUSH $DESTINATION -y rsync $HARDLINKS \
   $SOURCE:%files @self:%files \
