@@ -214,7 +214,7 @@ jenkins_github_token: INSERT_GITHUB_TOKEN
 # AWS configuration.
 aws_access_key_id: "INSERT_AWS_ACCESS_KEY"
 aws_secret_key: "INSERT_AWS_SECRET_KEY"
-aws_instance_type: "t2.micro"
+aws_instance_type: "t2.small"
 aws_region: "ap-southeast-2"
 aws_security_groups: ["default", "INSERT_AWS_SECURITY_GROUP"]
 aws_elastic_ip: "INSERT_AWS_ELASTIC_IP"
