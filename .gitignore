@@ -1,5 +1,7 @@
 .DS_Store
 .vagrant/
+ssh-keys/*
+!ssh-keys/README.md
 vagrant_ansible_inventory_default
 examples/prod/inventory
 config.yml
