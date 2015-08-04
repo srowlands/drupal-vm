@@ -238,8 +238,38 @@ $DRUSH $DESTINATION -y rsync $HARDLINKS \
   --omit-dir-times --no-p --no-o \
   --exclude-paths=&quot;css:js:styles:imagecache:ctools:tmp&quot;
 
-
 # @todo: Drop the rsync and rely on stage_file_proxy
+
+# Generate new Apache vhost for the PR environment.
+# @todo: cater for non-ubuntu Linux distros.
+PR_URL=$ISSUE_NUMBER.stage.govcms.dev
+
+if [ ! -f "/etc/apache2/sites-available/$PR_URL.conf" ]; then
+function make_vhost
+{
+cat <<- _EOF_
+DirectoryIndex index.php index.html
+
+<VirtualHost *:80>
+  ServerName $PR_URL
+  DocumentRoot /var/www/pull-requests/stage.govcms.dev/$PR_URL
+
+  <Directory "/var/www/pull-requests/stage.govcms.dev/$PR_URL">
+    AllowOverride All
+    Options -Indexes +FollowSymLinks
+    Require all granted
+  </Directory>
+</VirtualHost>
+_EOF_
+}
+
+make_vhost > /etc/apache2/sites-available/$PR_URL.conf
+
+# Reload Apache configuration.
+# @todo: cater for non-ubuntu Linux distros.
+ln -s /etc/apache2/sites-available/$PR_URL.conf /etc/apache2/sites-enabled/
+service apache2 reload
+fi
 
 # Comment on github with a URL to the new environment below:
 BODY=&quot;This pull request&apos;s testing environment is ready at $URL/$ISSUE_NUMBER&quot;

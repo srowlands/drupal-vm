@@ -57,3 +57,17 @@
     mode=0775
   sudo: yes
   when: '"jenkins" in installed_extras'
+
+- name: Ensure jenkins user is in www-data group (Debian).
+  user: "name=jenkins append=yes groups=www-data"
+  when: ansible_os_family == 'Debian' and '"jenkins" in installed_extras'
+
+- name: Ensure Apache config folder is writable by www-data group (Debian).
+  file: >
+    path=/etc/apache2
+    state=directory
+    owner=root
+    group=www-data
+    mode=0775
+  sudo: yes
+  when: ansible_os_family == 'Debian' and '"jenkins" in installed_extras'
