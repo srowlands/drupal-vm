@@ -218,9 +218,9 @@ jenkins_plugins:
   - 'log-parser'
   - 'ghprb'
   - 'ansicolor'
-jenkins_github_repo: git@github.com:srowlands/govcms-autodeploy-test.git
-jenkins_github_url: https://github.com/srowlands/govcms-autodeploy-test
-jenkins_github_stub: srowlands/govcms-autodeploy-test
+jenkins_github_repo: "{{ drupal_theme_repository }}"
+jenkins_github_url: https://github.com/user/repository
+jenkins_github_stub: user/repository
 jenkins_description: "govCMS pull request environment builder"
 
 # AWS configuration.

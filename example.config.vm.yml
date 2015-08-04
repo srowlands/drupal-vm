@@ -200,39 +200,3 @@ solr_xmx: "128M"
 
 # Selenium configuration
 selenium_version: 2.46.0
-
-# Jenkins configuration.
-jenkins_http_host: "{{ vagrant_ip }}"
-jenkins_jobs:
-  - name: "govcms_pull_request_builder"
-    template: templates/govcms-jenkins.xml.j2
-jenkins_plugins:
-  - 'git'
-  - 'github-api'
-  - 'plain-credentials'
-  - 'token-macro'
-  - 'github'
-  - 'ssh-agent'
-  - 'build-flow-plugin'
-  - 'credentials'
-  - 'log-parser'
-  - 'ghprb'
-  - 'ansicolor'
-jenkins_github_repo: git@github.com:srowlands/govcms-autodeploy-test.git
-jenkins_github_url: https://github.com/srowlands/govcms-autodeploy-test
-jenkins_github_stub: srowlands/govcms-autodeploy-test
-jenkins_description: "govCMS pull request environment builder"
-
-# AWS configuration.
-aws_access_key_id: "INSERT_AWS_ACCESS_KEY"
-aws_secret_key: "INSERT_AWS_SECRET_KEY"
-aws_instance_type: "t2.micro"
-aws_region: "ap-southeast-2"
-aws_security_groups: ["default", "INSERT_AWS_SECURITY_GROUP"]
-
-# Provide path to a private key (for ssh into provisioned instance).
-aws_keypair_name: "INSERT_AWS_KEYPAIR_NAME"
-aws_ssh_private_key: "/path/to/keypair/file.pem"
-
-# By default use an Ubuntu ami
-aws_ami: "ami-69631053"
