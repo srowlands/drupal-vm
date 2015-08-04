@@ -72,7 +72,7 @@
               <result>FAILURE</result>
             </org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
             <org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
-              <message>Sweet, built like a champion!
+              <message>The pull request environment has been successfully built.
 
 Visit PR environment here: &lt;a href=&quot;http://$ghprbPullId.stage.{{ drupal_domain }}&quot;&gt;http://$ghprbPullId.stage.{{ drupal_domain }}&lt;/a&gt;</message>
               <result>SUCCESS</result>
@@ -242,24 +242,24 @@ $DRUSH $DESTINATION -y rsync $HARDLINKS \
 
 # Generate new Apache vhost for the PR environment.
 # @todo: cater for non-ubuntu Linux distros.
-PR_URL=$ISSUE_NUMBER.stage.govcms.dev
+PR_URL=$ISSUE_NUMBER.stage.{{ drupal_domain }}
 
 if [ ! -f "/etc/apache2/sites-available/$PR_URL.conf" ]; then
 function make_vhost
 {
-cat <<- _EOF_
+cat &lt;&lt;- _EOF_
 DirectoryIndex index.php index.html
 
-<VirtualHost *:80>
+&lt;VirtualHost *:80&gt;
   ServerName $PR_URL
-  DocumentRoot /var/www/pull-requests/stage.govcms.dev/$PR_URL
+  DocumentRoot /var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL
 
-  <Directory "/var/www/pull-requests/stage.govcms.dev/$PR_URL">
+  &lt;Directory &quot;/var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL&amp;&quot;&gt;
     AllowOverride All
     Options -Indexes +FollowSymLinks
     Require all granted
-  </Directory>
-</VirtualHost>
+  &lt;/Directory&gt;
+&lt;/VirtualHost&gt;
 _EOF_
 }
 
@@ -269,46 +269,7 @@ make_vhost > /etc/apache2/sites-available/$PR_URL.conf
 # @todo: cater for non-ubuntu Linux distros.
 ln -s /etc/apache2/sites-available/$PR_URL.conf /etc/apache2/sites-enabled/
 service apache2 reload
-fi
-
-# Comment on github with a URL to the new environment below:
-BODY=&quot;This pull request&apos;s testing environment is ready at $URL/$ISSUE_NUMBER&quot;
-# If the environment already existed, just comment that it has been updated.
-if $EXISTING; then
-  BODY=&quot;The testing environment has been updated with the latest code.&quot;
-fi
-# The Github Organization or User and Repo name.
-GITHUB_ACCOUNT_REPO=&quot;{{ jenkins_github_stub }}&quot;
-# Github token for the bot user. It is recommended to use the Jenkins EnvInject
-# Plugin, and use the Inject Passwords option in your job, rather than
-# specificying this here.
-
-# Ensure curl exists.
-command -v curl &gt;/dev/null 2&gt;&amp;1 || {
-  echo &gt;&amp;2 &quot;You must have cURL installed for this command to work properly.&quot;;
-  exit 1;
-}
-
-URL=&quot;https://api.github.com/repos/$GITHUB_ACCOUNT_REPO/issues/$ISSUE_NUMBER/comments&quot;
-PUBLIC_URL=&quot;http://github.com/$GITHUB_ACCOUNT_REPO/issues/$ISSUE_NUMBER&quot;
-# Escape all single quotes.
-BODY=${BODY//\&apos;/\\\&apos;}
-# Encode to json. PHP makes this pretty easy. Maybe there&apos;s something better?
-DATA=`php -r &quot;print json_encode(array(&apos;body&apos; =&gt; &apos;$BODY&apos;));&quot;`
-# Now make the actual call to github.
-OUTPUT=`curl -H &quot;Authorization: token $GITHUB_TOKEN&quot; -d &quot;$DATA&quot; $URL`
-# Escape all single quotes again.
-OUTPUT=${OUTPUT//\&apos;/\\\&apos;}
-# Check for errors
-ERROR=`php -r &quot;\\$json = json_decode(&apos;$OUTPUT&apos;); isset(\\$json-&gt;message) ? print \\$json-&gt;message : NULL;&quot;`
-
-if [[ -z $ERROR ]]; then
-  echo &quot;Comment posted successfully to $PUBLIC_URL.&quot;
-  exit 0
-fi
-
-echo &quot;Failed to post comment. Reason: $ERROR.&quot;
-exit 1</command>
+fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -322,16 +283,6 @@ exit 1</command>
     <hudson.plugins.ansicolor.AnsiColorBuildWrapper plugin="ansicolor@0.4.1">
       <colorMapName>xterm</colorMapName>
     </hudson.plugins.ansicolor.AnsiColorBuildWrapper>
-    <EnvInjectPasswordWrapper plugin="envinject@1.91.3">
-      <injectGlobalPasswords>true</injectGlobalPasswords>
-      <maskPasswordParameters>true</maskPasswordParameters>
-      <passwordEntries>
-        <EnvInjectPasswordEntry>
-          <name>GITHUB_TOKEN</name>
-          <value>{{ jenkins_github_token }}</value>
-        </EnvInjectPasswordEntry>
-      </passwordEntries>
-    </EnvInjectPasswordWrapper>
     <com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper plugin="ssh-agent@1.7">
       <credentialIds>
         <string></string>

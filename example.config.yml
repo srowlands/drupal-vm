@@ -203,14 +203,12 @@ jenkins_plugins:
   - 'build-flow-plugin'
   - 'credentials'
   - 'log-parser'
-  - 'envinject'
   - 'ghprb'
   - 'ansicolor'
 jenkins_github_repo: git@github.com:srowlands/govcms-autodeploy-test.git
 jenkins_github_url: https://github.com/srowlands/govcms-autodeploy-test
 jenkins_github_stub: srowlands/govcms-autodeploy-test
 jenkins_description: "govCMS pull request environment builder"
-jenkins_github_token: XXX
 
 # AWS configuration.
 aws_access_key_id: "INSERT_AWS_ACCESS_KEY"
