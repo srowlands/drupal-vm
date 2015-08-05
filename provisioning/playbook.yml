@@ -58,7 +58,11 @@
 
     # Install site if configured.
     - include: tasks/install-site.yml
-      when: install_site
+      when: install_site and not import_site
+
+    # Import site if configured.
+    - include: tasks/import-site.yml
+      when: import_site and not install_site
 
     - include: tasks/drush-aliases.yml
     - include: tasks/drush-stage-file-proxy.yml
