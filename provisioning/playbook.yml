@@ -64,6 +64,10 @@
     - include: tasks/import-site.yml
       when: import_site and not install_site
 
+    # Deploy theme if configured.
+    - include: tasks/deploy-theme.yml
+      when: drupal_theme_repository is defined
+
     - include: tasks/drush-aliases.yml
     - include: tasks/drush-stage-file-proxy.yml
     - include: tasks/drush-shield.yml

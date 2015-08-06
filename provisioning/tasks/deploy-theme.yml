@@ -1,0 +1,25 @@
+---
+- name: Clean out theme folder.
+  file: path={{ drupal_core_path }}/sites/all/themes state=absent
+  when: drupal_theme_repository is defined
+
+- name: Checkout theme repository if provided.
+  git: >
+    repo={{ drupal_theme_repository }}
+    dest={{ drupal_core_path }}/sites/all/themes/
+    version={{ drupal_theme_version }}
+    accept_hostkey=yes
+    force=yes
+    recursive=no
+  when: drupal_theme_repository is defined and drupal_theme_key is not defined
+
+- name: Checkout theme repository (with SSH key) if provided.
+  git: >
+    repo={{ drupal_theme_repository }}
+    dest={{ drupal_core_path }}/sites/all/themes/
+    version={{ drupal_theme_version }}
+    accept_hostkey=yes
+    force=yes
+    recursive=no
+    key_file={{ drupal_theme_key }}
+  when: drupal_theme_repository is defined and drupal_theme_key is defined
