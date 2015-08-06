@@ -15,6 +15,11 @@
 - name: Import Drupal from MySQL dump.
   mysql_db: name={{ mysql_databases[0].name }} state=import target=/tmp/drupal-import.sql.gz
   when: "'Successful' not in drupal_site_installed.stdout"
+  notify: restart webserver
+
+- name: Copy settings.php file into place for first-time import.
+  template: src=../templates/govcms-settings.php.j2 dest=/var/www/drupal/sites/default/settings.php owner={{ vagrant_user }} group={{ vagrant_user }} mode=0444
+  when: "'Successful' not in drupal_site_installed.stdout"
 
 - name: Copy Drupal MySQL dump to /tmp/drupal-import.sql.gz for refresh.
   copy: src={{ drupal_mysql_dump }} dest=/tmp/drupal-import.sql.gz
