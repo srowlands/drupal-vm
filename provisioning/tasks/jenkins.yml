@@ -18,3 +18,57 @@
     mode=0744
   sudo: yes
   when: '"jenkins" in installed_extras'
+
+- name: Create pull-requests web folder.
+  file: >
+    path=/var/www/pull-requests
+    state=directory
+    owner={{jenkins_user}}
+    group={{jenkins_group}}
+    mode=0775
+  sudo: yes
+  when: '"jenkins" in installed_extras'
+
+- name: Ensure drush directory exists for jenkins user inside VM.
+  file: 'path="~jenkins/.drush" state=directory owner={{jenkins_user}}'
+  sudo: yes
+
+- name: Configure drush aliases for jenkins user inside VM.
+  template:
+    src: ../templates/drupalvm-local.aliases.drushrc.php.j2
+    dest: "~jenkins/.drush/{{ vagrant_machine_name }}.aliases.drushrc.php"
+    owner: "{{jenkins_user}}"
+  sudo: yes
+
+- name: Create site domain symlink to default in Drupal root.
+  file: >
+    src={{drupal_core_path}}/sites/default
+    dest={{drupal_core_path}}/sites/{{drupal_domain}}
+    owner=www-data
+    group=www-data
+    state=link
+  sudo: yes
+  when: '"jenkins" in installed_extras'
+
+- name: Download custom Drush commands.
+  get_url:
+    url="https://raw.githubusercontent.com/Lullabot/jenkins_github_drupal/master/jgd.drush.inc"
+    dest="{{jenkins_home}}/.drush/"
+    mode=0775
+  sudo: yes
+  when: '"jenkins" in installed_extras'
+
+- name: Ensure jenkins user is in www-data group (Debian).
+  user: "name=jenkins append=yes groups=www-data"
+  when: ansible_os_family == 'Debian' and '"jenkins" in installed_extras'
+
+- name: Ensure Apache config folder is writable by www-data group (Debian).
+  file: >
+    path=/etc/apache2
+    state=directory
+    recurse=yes
+    owner=root
+    group=www-data
+    mode=0775
+  sudo: yes
+  when: ansible_os_family == 'Debian' and '"jenkins" in installed_extras'

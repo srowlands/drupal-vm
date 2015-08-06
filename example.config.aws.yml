@@ -31,7 +31,7 @@ vagrant_cpus: 1
 # Set this to false if you are using a different site deployment strategy and
 # would like to configure 'vagrant_synced_folders' and 'apache_vhosts' manually.
 build_makefile: true
-drush_makefile_path: /vagrant/drupal.make.yml
+drush_makefile_path: /vagrant/drupal.make
 
 # Set this to false if you don't need to install drupal (using the drupal_*
 # settings below), but instead copy down a database (e.g. using drush sql-sync).
@@ -119,7 +119,7 @@ extra_packages: [ 'unzip' ]
 # You can configure almost anything else on the server in the rest of this file.
 extra_security_enabled: false
 
-drush_version: master
+drush_version: 6.6.0
 drush_keep_updated: true
 
 firewall_allowed_tcp_ports:

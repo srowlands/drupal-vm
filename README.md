@@ -35,7 +35,7 @@ It should take 10-15 minutes to build or rebuild the VM from scratch on a decent
 This codebase comes with preconfigured config files for the govCMS distribution. There are a couple places where you can customize the VM for your needs:
 
   - `config.yml`: Contains variables like the VM domain name and IP address, PHP and MySQL configuration, etc.
-  - `drupal.make.yml`: Contains configuration for the Drupal core version, modules, and patches that will be downloaded on Drupal's initial installation (more about [Drush make files](https://www.drupal.org/node/1432374)).
+  - `drupal.make`: Contains configuration for the Drupal core version, modules, and patches that will be downloaded on Drupal's initial installation (more about [Drush make files](https://www.drupal.org/node/1432374)).
 
 ## Quick Start Guide
 
@@ -127,14 +127,47 @@ This will install Jenkins and pre-configure with a pull-request environment buil
 It makes the following assumptions:
   - Your GitHub repository contains a Drupal theme folder at the root of the repository.
 
-  1. Perform the same steps as above, but copy the `example.config.aws-jenkins.yml` file instead at step 5.
-  2. Create a new GitHub repo to house the govCMS site theme.
-  3. Create a new GitHub 'bot' user and configure.
-    - Add SSH key to allow communication between Jenkins and GitHub (https://github.com/settings/ssh).
-    - Generate a new Personal access token (https://github.com/settings/tokens/new).
-    - The user needs to have administrator rights for your repository (must be owner (user repo) or must have Push, Pull & Administrative rights (organization repo))
-  4. Once complete, visit http://govcms.dev:8000/ in a browser.
-  5. @todo: complete CI config steps
+### Pre-build actions
+
+In order to use the pre-configured Jenkins pull-request environment builder you will need to perform the following steps:
+
+  1. Prepare AWS/EC2
+    - Allocate a new elastic IP in the EC2 console, take note of this IP address to enter in config.yml.
+    - Ensure you have a security group configured in EC2 that allows incoming TCP connections in port 22,80,8000 from valid IPs
+
+  2. Prepare GitHub
+    - Create a new GitHub repository containing 1 or more drupal themes at the root (public or private).
+    - Create a new GitHub 'bot' user and [add an SSH key](https://github.com/settings/ssh).
+      - The user needs to have administrator rights for your repository (must be owner (user repo) or must have Push, Pull & Administrative rights (organization repo))
+    - Generate a new [Personal Access Token](https://github.com/settings/tokens/new) and store somewhere safe.
+      - Needs repo, gist, notifications, user, admin:* scopes
+
+  3. Perform the same steps as above (remote AWS server), but copy the `example.config.aws-jenkins.yml` file instead at step 5.
+  4. Update the additional variables in the `config.yml` file:
+    - `jenkins_github_repo` (git URL to theme repository to monitor)
+    - `jenkins_github_url` (URL to GitHub repository)
+    - `jenkins_github_stub` (GitHub stub)
+    - `aws_elastic_ip` (IP address allocated above)
+  5. Once complete, visit http://govcms.dev:8000/ in a browser.
+
+  6. Prepare Jenkins
+    - [RECOMMENDED] Configure Jenkins security to avoid non-authenticated access.
+    - Go to the [credentials management screen](http://govcms.dev:8000/credential-store/).
+    - Click 'Add domain'
+      - enter 'api.github.com' for Domain Name
+      - add > Hostname > api.github.com
+      - add > URI scheme > https
+    - Click 'OK', then 'Add Credentials'
+      - select 'Secret text' type
+      - paste GitHub token into Secret field, and a useful description
+    - Go to the [configure system screen](http://govcms.dev:8000/configure).
+    - Under 'GitHub Pull Request Builder' select your token credential from the dropdown.
+    - Go to the [job configuration screen](http://govcms.dev:8000/job/govcms_pull_request_builder/configure).
+    - Under 'Source Code Management' section add credentials (SSH Username with private key).
+      - This should be the SSH key allocated to the 'bot' user above. Remember to enter the passphrase if you entered one when generating.
+    - Under 'Build Environment > SSH Agent Credentials' select the same credentials created above.
+    - Go to your GitHub repo > Settings > Webhooks & Services and ensure a new webhook has been created.
+      - Click the 'edit' icon and update the IP address to match the EC2 elastic IP.
 
 
 ## License

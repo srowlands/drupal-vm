@@ -114,6 +114,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     aws.region = vconfig['aws_region']
     aws.ami = vconfig['aws_ami']
     aws.instance_type = vconfig['aws_instance_type']
+    aws.elastic_ip = vconfig['aws_elastic_ip']
 
     override.ssh.username = vconfig['vagrant_user']
     override.ssh.private_key_path = vconfig['aws_ssh_private_key']
