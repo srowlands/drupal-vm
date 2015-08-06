@@ -6,9 +6,16 @@
   when: drupal_stage_file_proxy_url is defined
   sudo: no
 
-- name: Configure Stage File Proxy
+- name: Configure Stage File Proxy origin URL
   command: >
     {{ drush_path }} variable-set stage_file_proxy_origin {{ drupal_stage_file_proxy_url }} -y
     chdir={{ drupal_core_path }}
   when: drupal_stage_file_proxy_url is defined
+  sudo: no
+
+- name: Configure Stage File Proxy remote path
+  command: >
+    {{ drush_path }} variable-set stage_file_proxy_origin_dir {{ drupal_stage_file_proxy_path }} -y
+    chdir={{ drupal_core_path }}
+  when: drupal_stage_file_proxy_path is defined
   sudo: no

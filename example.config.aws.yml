@@ -52,9 +52,17 @@ drupal_mysql_user: drupal
 drupal_mysql_password: drupal
 drupal_mysql_database: drupal
 
+# Set this to true if you do not wish to install a blank govCMS instance, but
+# rather start by importing a SQL dump.
+import_site: false
+drupal_mysql_dump: "/path/to/mysql-dump.sql.gz"
+# Set this to true if you wish to refresh the database on each provision.
+drupal_mysql_refresh: false
+
 # Stage File Proxy URL
 # Provide an optional URL to proxy files to a remote location.
 # drupal_stage_file_proxy_url: "https://production-url.com"
+# drupal_stage_file_proxy_path: "sites/g/files/netXXX/f"
 
 # Shield configuration.
 drupal_shield_enabled: true

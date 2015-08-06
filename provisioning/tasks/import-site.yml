@@ -1,0 +1,60 @@
+---
+- name: Check if site is already installed.
+  command: >
+    {{ drush_path }} status bootstrap
+    chdir={{ drupal_core_path }}
+  register: drupal_site_installed
+  failed_when: false
+  changed_when: false
+  sudo: no
+
+- name: Copy Drupal MySQL dump to /tmp/drupal-import.sql.gz.
+  copy: src={{ drupal_mysql_dump }} dest=/tmp/drupal-import.sql.gz
+  when: "'Successful' not in drupal_site_installed.stdout"
+
+- name: Import Drupal from MySQL dump.
+  mysql_db: name={{ mysql_databases[0].name }} state=import target=/tmp/drupal-import.sql.gz
+  when: "'Successful' not in drupal_site_installed.stdout"
+  notify: restart webserver
+
+- name: Copy settings.php file into place for first-time import.
+  template: src=../templates/govcms-settings.php.j2 dest=/var/www/drupal/sites/default/settings.php owner={{ vagrant_user }} group={{ vagrant_user }} mode=0444
+  when: "'Successful' not in drupal_site_installed.stdout"
+
+- name: Copy Drupal MySQL dump to /tmp/drupal-import.sql.gz for refresh.
+  copy: src={{ drupal_mysql_dump }} dest=/tmp/drupal-import.sql.gz
+  when: drupal_mysql_refresh
+
+- name: Drop Drupal database for refresh.
+  mysql_db: name={{ mysql_databases[0].name }} state=absent
+  when: drupal_mysql_refresh
+
+- name: Recreate Drupal database for refresh.
+  mysql_db: name={{ mysql_databases[0].name }} state=present
+  when: drupal_mysql_refresh
+
+- name: Refresh Drupal database from MySQL dump.
+  mysql_db: name={{ mysql_databases[0].name }} state=import target=/tmp/drupal-import.sql.gz
+  when: drupal_mysql_refresh
+
+- name: Create a writable files directory for current drupal site.
+  file: path={{ drupal_core_path }}/sites/{{ drupal_site_directory }}/files state=directory owner=www-data group=www-data mode=0775
+
+- name: Reconfigure public files directory.
+  command: >
+    {{ drush_path }} vset file_public_path sites/{{ drupal_site_directory }}/files
+    chdir={{ drupal_core_path }}
+  sudo: no
+
+- name: Reconfigure temporary files directory.
+  command: >
+    {{ drush_path }} vset file_temporary_path /tmp
+    chdir={{ drupal_core_path }}
+  sudo: no
+
+- name: Install additional configured modules with drush.
+  command: >
+    {{ drush_path }} pm-enable -y {{ drupal_enable_modules | join(" ") }}
+    chdir={{ drupal_core_path }}
+  when: "'Successful' not in drupal_site_installed.stdout"
+  sudo: no
