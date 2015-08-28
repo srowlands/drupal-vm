@@ -54,19 +54,28 @@
 
     # Build makefile if configured.
     - include: tasks/build-makefile.yml
-      when: build_makefile
+      when: build_makefile and not acquia_cloud_connector
 
     # Install site if configured.
     - include: tasks/install-site.yml
-      when: install_site and not import_site
+      when: install_site and not import_site and not acquia_cloud_connector
 
     # Import site if configured.
     - include: tasks/import-site.yml
-      when: import_site and not install_site
+      when: import_site and not install_site and not acquia_cloud_connector
 
     # Deploy theme if configured.
     - include: tasks/deploy-theme.yml
-      when: drupal_theme_repository is defined
+      when: drupal_theme_repository is defined and not acquia_cloud_connector
+
+    # Use Acquia Cloud to deploy if configured.
+    - include: tasks/acquia-cloud.yml
+      environment:
+        ACQUIA_CLOUD_USERNAME: "{{ acquia_cloud_username }}"
+        ACQUIA_CLOUD_PASSWORD: "{{ acquia_cloud_password }}"
+        ACQUIA_CLOUD_SITE_ID: "{{ acquia_cloud_sitename }}"
+        ACQUIA_CLOUD_ENVIRONMENT: "{{ acquia_cloud_environment }}"
+      when: acquia_cloud_connector
 
     - include: tasks/drush-aliases.yml
     - include: tasks/drush-stage-file-proxy.yml

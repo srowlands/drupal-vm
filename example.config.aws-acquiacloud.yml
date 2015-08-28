@@ -1,0 +1,255 @@
+---
+# `vagrant_box` can also be set to geerlingguy/centos6, geerlingguy/centos7,
+# geerlingguy/ubuntu1204, parallels/ubuntu-14.04, etc.
+vagrant_box: dummy
+vagrant_user: ubuntu
+
+# If you need to run multiple instances of Drupal VM, set a unique hostname,
+# machine name, and IP address for each instance.
+vagrant_hostname: govcms.dev
+vagrant_machine_name: govcms-vm
+
+# A list of synced folders, with the keys 'local_path', 'destination', 'id', and
+# a 'type' of [nfs|rsync|smb] (leave empty for slow native shares). See
+
+# https://github.com/geerlingguy/drupal-vm/wiki/Syncing-Folders for more info.
+vagrant_synced_folders:
+  # The first synced folder will be used for the default Drupal installation, if
+  # build_from_makefile is 'true'.
+  - local_path: /var/www/govcms-vm
+    destination: /var/www
+    id: drupal
+    type: rsync
+    create: true
+# Disable sync on AWS by default.
+vagrant_sync_disable: true
+
+# Memory and CPU to use for this VM.
+vagrant_memory: 512
+vagrant_cpus: 1
+
+# Set this to false if you are using a different site deployment strategy and
+# would like to configure 'vagrant_synced_folders' and 'apache_vhosts' manually.
+build_makefile: true
+drush_makefile_path: /vagrant/drupal.make
+
+# Set this to false if you don't need to install drupal (using the drupal_*
+# settings below), but instead copy down a database (e.g. using drush sql-sync).
+install_site: true
+
+# Settings for building a Drupal site from a makefile (if 'build_from_makefile'
+# is 'true').
+drupal_major_version: 7
+drupal_core_path: /var/www/drupal/docroot
+drupal_domain: govcms.dev
+drupal_site_name: Drupal
+drupal_site_directory: default
+drupal_install_profile: govcms
+drupal_enable_modules: [ devel ]
+drupal_account_name: admin
+drupal_account_pass: admin
+drupal_mysql_user: drupal
+drupal_mysql_password: drupal
+drupal_mysql_database: drupal
+
+# Set this to true if you do not wish to install a blank govCMS instance, but
+# rather start by importing a SQL dump.
+import_site: false
+# drupal_mysql_dump: "/path/to/mysql-dump.sql.gz"
+# Set this to true if you wish to refresh the database on each provision.
+# drupal_mysql_refresh: false
+
+# Acquia Cloud Connector settings.
+# If you configure the Acquia Cloud connector settings below then the database
+# will be cloned upon provision and the codebase will be used in place
+# of the default govCMS distribution.
+acquia_cloud_connector: true
+acquia_cloud_username: "INSERT_USERNAME@DOMAIN.COM"
+# Found in https://accounts.acquia.com/account/account_id/security?site=insight
+acquia_cloud_password: "INSERT_ACQUIA_CLOUD_API"
+acquia_cloud_git: "INSERT_ACQUIA_GIT_REPO"
+acquia_cloud_clone_path: "/var/www/drupal"
+acquia_cloud_key: "/vagrant/ssh-keys/INSERT_ACQUIA_CLOUD_KEY"
+# May be a branch of a tag.
+acquia_cloud_tag: "master"
+# May be one of [dev, test, prod].
+acquia_cloud_environment: "dev"
+acquia_cloud_sitename: "INSERT_SITE_NAME"
+
+# Optional git repository containing one or more themes.
+drupal_theme_repository: "git@github.com:user/repo.git"
+drupal_theme_version: "master"
+drupal_theme_key: "/vagrant/ssh-keys/INSERT_GITHUB_KEY"
+
+# Stage File Proxy URL
+# Provide an optional URL to proxy files to a remote location.
+drupal_stage_file_proxy_url: "http://INSERT_ACQUIA_SITE_URL"
+drupal_stage_file_proxy_path: "sites/default/files"
+
+# Shield configuration.
+drupal_shield_enabled: true
+drupal_shield_user: admin
+drupal_shield_password: password
+
+# Cron jobs are added to the root user's crontab. Keys include name (required),
+# minute, hour, day, weekday, month, job (required), and state.
+drupalvm_cron_jobs: []
+  # - {
+  #   name: "Drupal Cron",
+  #   minute: "*/30",
+  #   job: "drush -r {{ drupal_core_path }} core-cron"
+  # }
+
+# Drupal VM automatically creates a drush alias file in your ~/.drush folder if
+# this variable is 'true'.
+configure_local_drush_aliases: true
+
+# Apache VirtualHosts. Add one for each site you are running inside the VM. For
+# multisite deployments, you can point multiple servernames at one documentroot.
+apache_vhosts:
+  - {servername: "{{ drupal_domain }}", documentroot: "{{ drupal_core_path }}"}
+  - {servername: "xhprof.govcms.dev", documentroot: "/usr/share/php/xhprof_html"}
+  - {servername: "pimpmylog.govcms.dev", documentroot: "/usr/share/php/pimpmylog"}
+apache_remove_default_vhost: true
+apache_mods_enabled:
+  - expires.load
+  - ssl.load
+  - rewrite.load
+
+# MySQL Databases and users. If build_from_makefile is true, first database will
+# be used for the makefile-built site.
+mysql_databases:
+  - name: "{{ drupal_mysql_database }}"
+    encoding: utf8
+    collation: utf8_general_ci
+
+mysql_users:
+  - name: "{{ drupal_mysql_user }}"
+    host: "%"
+    password: "{{ drupal_mysql_password }}"
+    priv: "{{ drupal_mysql_database }}%.*:ALL"
+
+# Comment out any extra utilities you don't want to install. If you don't want
+# to install *any* extras, make set this value to an empty set, e.g. `[]`.
+installed_extras:
+  - adminer
+  - jenkins
+  - mailhog
+  - memcached
+  - pimpmylog
+  # - selenium
+  # - solr
+  - varnish
+  - xdebug
+  - xhprof
+
+# Add any extra packages you'd like to install.
+extra_packages: [ 'unzip' ]
+
+# You can configure almost anything else on the server in the rest of this file.
+extra_security_enabled: false
+
+drush_version: 6.6.0
+drush_keep_updated: true
+
+firewall_allowed_tcp_ports:
+  - "22"
+  - "25"
+  - "80"
+  - "81"
+  - "443"
+  - "4444"
+  - "8000"
+  - "8025"
+  - "8080"
+  - "8443"
+  - "8983"
+firewall_log_dropped_packets: false
+
+# PHP Configuration. Currently-supported versions: 5.5, 5.6, 7.0 (experimental).
+php_version: "5.6"
+php_memory_limit: "192M"
+php_display_errors: "On"
+php_display_startup_errors: "On"
+php_realpath_cache_size: "1024K"
+php_sendmail_path: "/usr/sbin/ssmtp -t"
+php_opcache_enabled_in_ini: true
+php_opcache_memory_consumption: "192"
+php_opcache_max_accelerated_files: 4096
+php_max_input_vars: "4000"
+
+composer_path: /usr/bin/composer
+composer_home_path: '/home/vagrant/.composer'
+# composer_global_packages:
+#   - { name: phpunit/phpunit, release: '@stable' }
+
+# MySQL Configuration.
+mysql_root_password: root
+mysql_slow_query_log_enabled: true
+mysql_slow_query_time: 2
+adminer_add_apache_config: true
+
+# Varnish Configuration.
+varnish_listen_port: "81"
+varnish_default_vcl_template_path: templates/drupalvm.vcl.j2
+varnish_default_backend_host: "127.0.0.1"
+varnish_default_backend_port: "80"
+
+# Pimp my Log settings.
+pimpmylog_install_dir: /usr/share/php/pimpmylog
+pimpmylog_grant_all_privs: true
+
+# XDebug configuration. XDebug is disabled by default for better performance.
+php_xdebug_default_enable: 0
+php_xdebug_coverage_enable: 0
+php_xdebug_cli_enable: 0
+php_xdebug_remote_enable: 1
+php_xdebug_remote_connect_back: 1
+# Use PHPSTORM for PHPStorm, sublime.xdebug for Sublime Text.
+php_xdebug_idekey: PHPSTORM
+php_xdebug_max_nesting_level: 255
+
+# Solr Configuration (if enabled above).
+solr_version: "4.10.4"
+solr_xms: "64M"
+solr_xmx: "128M"
+
+# Selenium configuration
+selenium_version: 2.46.0
+
+# Jenkins configuration.
+jenkins_http_host: "0.0.0.0"
+jenkins_jobs:
+  - name: "govcms_pull_request_builder"
+    template: templates/govcms-jenkins.xml.j2
+jenkins_plugins:
+  - 'git'
+  - 'github-api'
+  - 'plain-credentials'
+  - 'token-macro'
+  - 'github'
+  - 'ssh-agent'
+  - 'build-flow-plugin'
+  - 'credentials'
+  - 'log-parser'
+  - 'ghprb'
+  - 'ansicolor'
+jenkins_github_repo: "{{ drupal_theme_repository }}"
+jenkins_github_url: https://github.com/user/repository
+jenkins_github_stub: user/repository
+jenkins_description: "govCMS pull request environment builder"
+
+# AWS configuration.
+aws_access_key_id: "INSERT_AWS_ACCESS_KEY"
+aws_secret_key: "INSERT_AWS_SECRET_KEY"
+aws_instance_type: "t2.small"
+aws_region: "ap-southeast-2"
+aws_security_groups: ["default", "INSERT_AWS_SECURITY_GROUP"]
+aws_elastic_ip: "INSERT_AWS_ELASTIC_IP"
+
+# Provide path to a private key (for ssh into provisioned instance).
+aws_keypair_name: "INSERT_AWS_KEYPAIR_NAME"
+aws_ssh_private_key: "/path/to/keypair/file.pem"
+
+# By default use an Ubuntu ami
+aws_ami: "ami-69631053"

@@ -1,0 +1,80 @@
+---
+- name: Checkout Acquia Cloud repository
+  git: >
+    repo={{ acquia_cloud_git }}
+    dest={{ acquia_cloud_clone_path }}
+    version={{ acquia_cloud_tag }}
+    accept_hostkey=yes
+    force=yes
+    recursive=no
+    key_file={{ acquia_cloud_key }}
+
+- name: Correct ownership of Drupal core path
+  file: path={{ drupal_core_path }} owner={{ vagrant_user }} group=www-data mode=755 state=directory recurse=yes
+
+- name: Checkout Acquia Cloud connector repository
+  git: >
+    repo=git@github.com:srowlands/govcms-drupal-vm-ac.git
+    dest=/var/acquia-cloud-connector
+    version=master
+    accept_hostkey=yes
+    force=yes
+    recursive=no
+    key_file={{ acquia_cloud_key }}
+
+- name: Install Acquia Cloud connector requirements
+  composer: command=install working_dir=/var/acquia-cloud-connector
+
+- name: Create database backup from Acquia Cloud
+  command: >
+    php /var/acquia-cloud-connector/create-backup.php
+    chdir=/var/acquia-cloud-connector/ 
+  sudo: yes
+  environment:
+    ACQUIA_CLOUD_USERNAME: "{{ acquia_cloud_username }}"
+    ACQUIA_CLOUD_PASSWORD: "{{ acquia_cloud_password }}"
+    ACQUIA_CLOUD_SITENAME: "{{ acquia_cloud_sitename }}"
+    ACQUIA_CLOUD_ENVIRONMENT: "{{ acquia_cloud_environment }}"
+
+- name: Check if site is already installed.
+  command: >
+    {{ drush_path }} status bootstrap
+    chdir={{ drupal_core_path }}
+  register: drupal_site_installed
+  failed_when: false
+  changed_when: false
+  sudo: no
+
+- name: Import Drupal from MySQL dump.
+  mysql_db: name={{ mysql_databases[0].name }} state=import target=/var/acquia-cloud-connector/test.sql.gz
+  when: "'Successful' not in drupal_site_installed.stdout"
+  notify: restart webserver
+
+- name: Copy settings.php file into place for first-time import.
+  template: src=../templates/govcms-settings.php.j2 dest={{ drupal_core_path }}/sites/default/settings.php owner={{ vagrant_user }} group={{ vagrant_user }} mode=0444
+  when: "'Successful' not in drupal_site_installed.stdout"
+
+- name: Create a writable files directory for current drupal site.
+  file: path={{ drupal_core_path }}/sites/{{ drupal_site_directory }}/files state=directory owner=www-data group=ubuntu mode=0775
+
+- name: Reconfigure public files directory.
+  command: >
+    {{ drush_path }} vset file_public_path sites/{{ drupal_site_directory }}/files
+    chdir={{ drupal_core_path }}
+  sudo: no
+
+- name: Reconfigure temporary files directory.
+  command: >
+    {{ drush_path }} vset file_temporary_path /tmp
+    chdir={{ drupal_core_path }}
+  sudo: no
+
+- include: drush-stage-file-proxy.yml
+
+- name: Install additional configured modules with drush.
+  command: >
+    {{ drush_path }} pm-enable -y {{ drupal_enable_modules | join(" ") }}
+    chdir={{ drupal_core_path }}
+  when: "'Successful' not in drupal_site_installed.stdout"
+  sudo: no
+
