@@ -69,7 +69,7 @@
       when: drupal_theme_repository is defined and not acquia_cloud_connector
 
     # Use Acquia Cloud to deploy if configured.
-    - include: tasks/acquia-cloud.yml
+    - include: tasks/acquia-cloud.yml tags=acquia-cloud
       environment:
         ACQUIA_CLOUD_USERNAME: "{{ acquia_cloud_username }}"
         ACQUIA_CLOUD_PASSWORD: "{{ acquia_cloud_password }}"

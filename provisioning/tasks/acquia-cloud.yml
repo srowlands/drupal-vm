@@ -11,19 +11,20 @@
 
 - name: Correct ownership of Drupal core path
   file: path={{ drupal_core_path }} owner={{ vagrant_user }} group=www-data mode=755 state=directory recurse=yes
+  sudo: yes
 
 - name: Checkout Acquia Cloud connector repository
   git: >
-    repo=git@github.com:srowlands/govcms-drupal-vm-ac.git
+    repo=git://github.com/srowlands/govcms-drupal-vm-ac.git
     dest=/var/acquia-cloud-connector
-    version=master
     accept_hostkey=yes
     force=yes
     recursive=no
-    key_file={{ acquia_cloud_key }}
+  sudo: yes
 
 - name: Install Acquia Cloud connector requirements
   composer: command=install working_dir=/var/acquia-cloud-connector
+  sudo: yes
 
 - name: Create database backup from Acquia Cloud
   command: >
@@ -46,9 +47,14 @@
   sudo: no
 
 - name: Import Drupal from MySQL dump.
-  mysql_db: name={{ mysql_databases[0].name }} state=import target=/var/acquia-cloud-connector/test.sql.gz
+  mysql_db: >
+    name={{ mysql_databases[0].name }}
+    state=import
+    target=/var/acquia-cloud-connector/ac-dump.sql.gz
+    login_user={{ drupal_mysql_user }}
+    login_password={{ drupal_mysql_password }}
   when: "'Successful' not in drupal_site_installed.stdout"
-  notify: restart webserver
+  sudo: yes
 
 - name: Copy settings.php file into place for first-time import.
   template: src=../templates/govcms-settings.php.j2 dest={{ drupal_core_path }}/sites/default/settings.php owner={{ vagrant_user }} group={{ vagrant_user }} mode=0444
@@ -56,6 +62,7 @@
 
 - name: Create a writable files directory for current drupal site.
   file: path={{ drupal_core_path }}/sites/{{ drupal_site_directory }}/files state=directory owner=www-data group=ubuntu mode=0775
+  sudo: yes
 
 - name: Reconfigure public files directory.
   command: >
