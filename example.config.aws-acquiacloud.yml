@@ -221,7 +221,7 @@ selenium_version: 2.46.0
 jenkins_http_host: "0.0.0.0"
 jenkins_jobs:
   - name: "govcms_pull_request_builder"
-    template: templates/govcms-jenkins.xml.j2
+    template: templates/govcms-jenkins-acquiacloud.xml.j2
 jenkins_plugins:
   - 'git'
   - 'github-api'
@@ -234,6 +234,8 @@ jenkins_plugins:
   - 'log-parser'
   - 'ghprb'
   - 'ansicolor'
+  - 'credentials-binding'
+  - 'envinject'
 jenkins_github_repo: "{{ drupal_theme_repository }}"
 jenkins_github_url: https://github.com/user/repository
 jenkins_github_stub: user/repository

@@ -1,0 +1,310 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>{{ jenkins_description }}</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.12.0">
+      <projectUrl>{{ jenkins_github_url }}</projectUrl>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <refspec>+refs/pull/*:refs/remotes/origin/pr/*</refspec>
+        <url>{{ jenkins_github_repo }}</url>
+        <credentialsId></credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>${sha1}</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+        <relativeTargetDir>new_pull_request</relativeTargetDir>
+      </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+    </extensions>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <org.jenkinsci.plugins.ghprb.GhprbTrigger plugin="ghprb@1.26.2">
+      <spec>H/5 * * * *</spec>
+      <configVersion>1</configVersion>
+      <adminlist>srowlands</adminlist>
+      <allowMembersOfWhitelistedOrgsAsAdmin>false</allowMembersOfWhitelistedOrgsAsAdmin>
+      <orgslist></orgslist>
+      <cron>H/5 * * * *</cron>
+      <triggerPhrase>test this</triggerPhrase>
+      <buildDescTemplate></buildDescTemplate>
+      <onlyTriggerPhrase>false</onlyTriggerPhrase>
+      <useGitHubHooks>true</useGitHubHooks>
+      <permitAll>false</permitAll>
+      <whitelist></whitelist>
+      <autoCloseFailedPullRequests>false</autoCloseFailedPullRequests>
+      <displayBuildErrorsOnDownstreamBuilds>false</displayBuildErrorsOnDownstreamBuilds>
+      <whiteListTargetBranches>
+        <org.jenkinsci.plugins.ghprb.GhprbBranch>
+          <branch></branch>
+        </org.jenkinsci.plugins.ghprb.GhprbBranch>
+      </whiteListTargetBranches>
+      <project>govcms_pull_request_builder</project>
+      <__project class="project" reference="../../.."/>
+      <gitHubAuthId></gitHubAuthId>
+      <extensions>
+        <org.jenkinsci.plugins.ghprb.extensions.status.GhprbSimpleStatus>
+          <commitStatusContext></commitStatusContext>
+          <triggeredStatus></triggeredStatus>
+          <startedStatus></startedStatus>
+          <statusUrl></statusUrl>
+        </org.jenkinsci.plugins.ghprb.extensions.status.GhprbSimpleStatus>
+        <org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildStatus>
+          <messages>
+            <org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+              <message>The build environment failed.</message>
+              <result>FAILURE</result>
+            </org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+            <org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+              <message>The pull request environment has been successfully built.
+
+Visit PR environment here: &lt;a href=&quot;http://$ghprbPullId.stage.{{ drupal_domain }}&quot;&gt;http://$ghprbPullId.stage.{{ drupal_domain }}&lt;/a&gt;</message>
+              <result>SUCCESS</result>
+            </org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildResultMessage>
+          </messages>
+        </org.jenkinsci.plugins.ghprb.extensions.comments.GhprbBuildStatus>
+      </extensions>
+    </org.jenkinsci.plugins.ghprb.GhprbTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/usr/bin/env bash
+set -e
+
+# Jenkins job script based on the Jenkins Github Drupal, which can be found
+# at https://github.com/Lullabot/jenkins_github_drupal.
+
+# Since the pull request builder doesn&apos;t give us the pull request ID as an
+# environment variable, we need $sha1 to be of the format origin/pr/[0-9]/merge,
+# so that we can grep out the Pull Request ID.
+if [[ $sha1 == origin/pr* ]]; then
+  ISSUE_NUMBER=${sha1//[^0-9]/}
+else
+  echo &quot;sha1 must be in the format origin/pr/[0-9]/merge.&quot; 1&gt;&amp;2
+  exit 1;
+fi
+
+# If you&apos;re using something like the Description Setter plugin, you can use this
+# line to set the build description. Just set your regex to \[BUILD\] (.*)
+echo &quot;[BUILD] Pull Request #$ISSUE_NUMBER&quot;
+
+# Location of the parent directory of the web root this site will be hosted at.
+# Defaults to the job workspace. Note, the Jenkins user must have write
+# permissions to this directory.
+WEBROOT=/var/www/pull-requests/stage.{{ drupal_domain }}
+
+# Test whether the webroot exists.
+if [ ! -d &quot;$WEBROOT&quot; ]; then
+  mkdir -p $WEBROOT;
+fi
+
+# Test whether this pull request already exists.
+EXISTING=false
+if [[ -L $WEBROOT/$ISSUE_NUMBER ]]; then
+  EXISTING=true
+fi
+
+# Install govCMS into the webroot (if there is no docroot)
+ACTUAL_DIR=${WORKSPACE}/${ISSUE_NUMBER}-actual
+DOCROOT_DIR=${ACTUAL_DIR}/docroot
+if [ ! -d &quot;$DOCROOT_DIR&quot; ]; then
+    printf &apos;%s\n&apos; &quot;Setting up govCMS for first time build ($DOCROOT_DIR)&quot;
+    rm -rf &quot;$ACTUAL_DIR&quot;;
+    rsync -a --no-links /var/www/drupal $ACTUAL_DIR
+fi
+
+MERGE_BRANCH=&quot;master&quot;
+
+# This is the directory of the checked out pull request, from Jenkins.
+ORIGINAL_DIR=&quot;${WORKSPACE}/new_pull_request&quot;
+# The directory where the checked out pull request will reside.
+ACTUAL_DIR=&quot;${WORKSPACE}/${ISSUE_NUMBER}-actual/docroot/sites/all/themes&quot;
+# The directory where the docroot will be symlinked to.
+DOCROOT=$WEBROOT/$ISSUE_NUMBER.stage.{{ drupal_domain }}
+# The command will attempt to merge master with the pull request.
+BRANCH=&quot;jenkins-pull-request-$ISSUE_NUMBER&quot;
+
+# Remove the existing .git dir if it exists.
+rm -rf $ACTUAL_DIR/.git
+# Copy the new_pull_request directory.
+rsync -a ${ORIGINAL_DIR}/ $ACTUAL_DIR
+# Now remove the new_pull_request directory.
+rm -rf $ORIGINAL_DIR
+# Create a symlink to the docroot, if it doesn&apos;t already exist.
+if [ ! -h $DOCROOT -a -d $ACTUAL_DIR ];
+then
+  ln -sf ${WORKSPACE}/${ISSUE_NUMBER}-actual/docroot $DOCROOT
+fi
+
+cd ${ACTUAL_DIR}
+git checkout -b $BRANCH
+# Clean out any untracked files and directories.
+git clean -d -f
+# Now checkout the merge branch.
+git checkout $MERGE_BRANCH
+git pull
+git merge $BRANCH -m &quot;Jenkins test merge into master.&quot;
+
+echo &quot;Checked out a new branch for this pull request, and merged it to $MERGE_BRANCH.&quot;
+
+
+######
+# The apache or web group on the server, used to chgrp the files directory
+# appropriately after rsyncing.
+WEBGROUP=&quot;www-data&quot;
+
+# The drush alias of the site you are cloning. Typically, this is your staging
+# site. Do NOT use a production site here.
+ALIAS=&quot;@{{ drupal_domain }}&quot;
+
+####### CLONE SITE
+SOURCE=$ALIAS
+URL=http://{{ drupal_domain }}
+
+####### Use Acquia Cloud connector to pull latest database
+php /var/acquia-cloud-connector/create-backup.php
+
+# Put drush in verbose mode, if requested, and include our script dir so we have
+# access to our custom drush commands.
+DRUSH=&quot;drush --include=/var/lib/jenkins/.drush&quot;
+
+# The base prefix to use for the database tables.
+PREFIX=&quot;pr_&quot;
+# The unique prefix to use for just this pull request.
+DB_PREFIX=&quot;${PREFIX}${ISSUE_NUMBER}_&quot;
+DB_SUFFIX=&quot;_${ISSUE_NUMBER}&quot;
+# The drush options for the Drupal destination site. Eventually, we could open
+# this up to allow users to specify a drush site alias, but for now, we&apos;ll just
+# manually specify the root and uri options.
+DESTINATION=&quot;--root=$DOCROOT --uri=$URL&quot;
+
+# Check to make sure drush is working properly, and can access the source site.
+$DRUSH $SOURCE status --quiet
+
+# Copy the existing settings.php to the new site, but add a database name suffix.
+$DRUSH $DESTINATION --yes $EXTRA_SETTINGS --database clone-settings-php $SOURCE $DB_SUFFIX
+
+# Copy the database to the new location
+$DRUSH $DESTINATION sql-create --yes
+gunzip &lt; /tmp/ac-dump.sql.gz | $DRUSH $DESTINATION sql-cli
+
+# If we have the registry-rebuild command available, let&apos;s go ahead and use it
+# first. If modules or classes have changed names or directories, then the
+# following drush commands will fail.
+if [[ -n `eval $DRUSH $DESTINATION help --pipe | grep registry-rebuild` ]]; then
+  eval $DRUSH $DESTINATION registry-rebuild
+fi
+
+# Now, rsync the files over. If we have a webgroup, set the sticky bit on the
+# directory before rsyncing. We then rsync with --no-p, --no-o, and
+# --omit-dir-times, to avoid errors. There are dynamically created directories
+# we can exclude as well, such as css, js, styles, etc.
+if [[ $WEBGROUP ]]; then
+  DESTINATION_FILES=`$DRUSH $DESTINATION dd files`
+  mkdir -p -m 2775 &quot;$DESTINATION_FILES&quot;
+  chmod 777 $DESTINATION_FILES
+fi
+$DRUSH $DESTINATION -y rsync $HARDLINKS \
+  $SOURCE:%files @self:%files \
+  --omit-dir-times --no-p --no-o \
+  --exclude-paths=&quot;css:js:styles:imagecache:ctools:tmp&quot;
+
+# @todo: Drop the rsync and rely on stage_file_proxy
+
+# Generate new Apache vhost for the PR environment.
+# @todo: cater for non-ubuntu Linux distros.
+PR_URL=$ISSUE_NUMBER.stage.{{ drupal_domain }}
+
+if [ ! -f "/etc/apache2/sites-available/$PR_URL.conf" ]; then
+function make_vhost
+{
+cat &lt;&lt;- _EOF_
+DirectoryIndex index.php index.html
+
+&lt;VirtualHost *:80&gt;
+  ServerName $PR_URL
+  DocumentRoot /var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL
+
+  &lt;Directory &quot;/var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL&amp;&quot;&gt;
+    AllowOverride All
+    Options -Indexes +FollowSymLinks
+    Require all granted
+  &lt;/Directory&gt;
+&lt;/VirtualHost&gt;
+_EOF_
+}
+
+make_vhost > /etc/apache2/sites-available/$PR_URL.conf
+
+# Reload Apache configuration.
+# @todo: cater for non-ubuntu Linux distros.
+ln -s /etc/apache2/sites-available/$PR_URL.conf /etc/apache2/sites-enabled/
+service apache2 restart
+fi
+
+# Enable Shield
+$DRUSH $DESTINATION pm-enable shield --yes
+$DRUSH $DESTINATION variable-set shield_enabled 1 --yes
+$DRUSH $DESTINATION variable-set shield_user &quot;{{ drupal_shield_user }}&quot; --yes
+$DRUSH $DESTINATION variable-set shield_pass &quot;{{ drupal_shield_password }}&quot; --yes
+
+# Enable stage_file_proxy
+$DRUSH $DESTINATION pm-enable stage_file_proxy --yes
+$DRUSH $DESTINATION variable-set stage_file_proxy_origin &quot;{{ drupal_stage_file_proxy_url }}&quot;
+$DRUSH $DESTINATION variable-set stage_file_proxy_origin_dir  &quot;{{ drupal_stage_file_proxy_path }}&quot;</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.logparser.LogParserPublisher plugin="log-parser@1.0.8">
+      <unstableOnWarning>true</unstableOnWarning>
+      <failBuildOnError>true</failBuildOnError>
+      <parsingRulesPath></parsingRulesPath>
+    </hudson.plugins.logparser.LogParserPublisher>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.ansicolor.AnsiColorBuildWrapper plugin="ansicolor@0.4.1">
+      <colorMapName>xterm</colorMapName>
+    </hudson.plugins.ansicolor.AnsiColorBuildWrapper>
+    <EnvInjectBuildWrapper plugin="envinject@1.92.1">
+      <info>
+        <propertiesContent>ACQUIA_CLOUD_DATABASE_DESTINATION=/tmp/
+ACQUIA_CLOUD_ENVIRONMENT={{ acquia_cloud_environment }}
+ACQUIA_CLOUD_SITENAME={{ acquia_cloud_sitename }}
+ACQUIA_CLOUD_USERNAME={{ acquia_cloud_username }}
+</propertiesContent>
+        <loadFilesFromMaster>false</loadFilesFromMaster>
+      </info>
+    </EnvInjectBuildWrapper>
+    <com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper plugin="ssh-agent@1.7">
+      <credentialIds>
+        <string></string>
+      </credentialIds>
+      <ignoreMissing>false</ignoreMissing>
+    </com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper>
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding@1.5">
+      <bindings>
+        <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+          <credentialsId></credentialsId>
+          <variable>ACQUIA_CLOUD_PASSWORD</variable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+      </bindings>
+    </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
+  </buildWrappers>
+</project>
