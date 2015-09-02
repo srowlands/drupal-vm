@@ -61,7 +61,7 @@
   when: "'Successful' not in drupal_site_installed.stdout"
 
 - name: Create a writable files directory for current drupal site.
-  file: path={{ drupal_core_path }}/sites/{{ drupal_site_directory }}/files state=directory owner=www-data group=ubuntu mode=0775
+  file: path={{ drupal_core_path }}/sites/{{ drupal_site_directory }}/files state=directory owner=www-data group={{ vagrant_user }} mode=0775
   sudo: yes
 
 - name: Reconfigure public files directory.
