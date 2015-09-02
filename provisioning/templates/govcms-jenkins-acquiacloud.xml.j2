@@ -127,7 +127,7 @@ DOCROOT_DIR=${ACTUAL_DIR}/docroot
 if [ ! -d &quot;$DOCROOT_DIR&quot; ]; then
     printf &apos;%s\n&apos; &quot;Setting up govCMS for first time build ($DOCROOT_DIR)&quot;
     rm -rf &quot;$ACTUAL_DIR&quot;;
-    rsync -a --no-links /var/www/drupal $ACTUAL_DIR
+    rsync -a --no-links /var/www/drupal/* $ACTUAL_DIR
 fi
 
 MERGE_BRANCH=&quot;master&quot;
@@ -242,7 +242,7 @@ DirectoryIndex index.php index.html
   ServerName $PR_URL
   DocumentRoot /var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL
 
-  &lt;Directory &quot;/var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL&amp;&quot;&gt;
+  &lt;Directory &quot;/var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL&quot;&gt;
     AllowOverride All
     Options -Indexes +FollowSymLinks
     Require all granted
@@ -256,7 +256,7 @@ make_vhost > /etc/apache2/sites-available/$PR_URL.conf
 # Reload Apache configuration.
 # @todo: cater for non-ubuntu Linux distros.
 ln -s /etc/apache2/sites-available/$PR_URL.conf /etc/apache2/sites-enabled/
-service apache2 restart
+sudo /usr/bin/service apache2 restart
 fi
 
 # Enable Shield

@@ -254,7 +254,7 @@ DirectoryIndex index.php index.html
   ServerName $PR_URL
   DocumentRoot /var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL
 
-  &lt;Directory &quot;/var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL&amp;&quot;&gt;
+  &lt;Directory &quot;/var/www/pull-requests/stage.{{ drupal_domain }}/$PR_URL&quot;&gt;
     AllowOverride All
     Options -Indexes +FollowSymLinks
     Require all granted
@@ -268,7 +268,7 @@ make_vhost > /etc/apache2/sites-available/$PR_URL.conf
 # Reload Apache configuration.
 # @todo: cater for non-ubuntu Linux distros.
 ln -s /etc/apache2/sites-available/$PR_URL.conf /etc/apache2/sites-enabled/
-service apache2 reload
+sudo /usr/bin/service apache2 restart
 fi</command>
     </hudson.tasks.Shell>
   </builders>
