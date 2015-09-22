@@ -126,11 +126,8 @@ ACTUAL_DIR=${WORKSPACE}/${ISSUE_NUMBER}-actual
 DOCROOT_DIR=${ACTUAL_DIR}/docroot
 if [ ! -d &quot;$DOCROOT_DIR&quot; ]; then
     printf &apos;%s\n&apos; &quot;Setting up govCMS for first time build ($DOCROOT_DIR)&quot;
-    rm -rf &quot;$ACTUAL_DIR&quot;; mkdir $ACTUAL_DIR;
-    cd $ACTUAL_DIR; git clone git@github.com:govCMS/govCMS.git .;
-    curl -sS https://getcomposer.org/installer | php
-    php composer.phar install --prefer-dist --working-dir=build
-    build/bin/phing -f build/phing/build.xml make:local
+    rm -rf &quot;$ACTUAL_DIR&quot;;
+    rsync -a --no-links /var/www/drupal/* $ACTUAL_DIR
 fi
 
 MERGE_BRANCH=&quot;master&quot;
@@ -180,7 +177,9 @@ ALIAS=&quot;@{{ drupal_domain }}&quot;
 ####### CLONE SITE
 SOURCE=$ALIAS
 URL=http://{{ drupal_domain }}
-CLONE=database
+
+####### Use Acquia Cloud connector to pull latest database
+php /var/acquia-cloud-connector/create-backup.php
 
 # Put drush in verbose mode, if requested, and include our script dir so we have
 # access to our custom drush commands.
@@ -199,23 +198,12 @@ DESTINATION=&quot;--root=$DOCROOT --uri=$URL&quot;
 # Check to make sure drush is working properly, and can access the source site.
 $DRUSH $SOURCE status --quiet
 
-if [ &quot;$CLONE&quot; == &quot;database&quot; ]; then
-  # Copy the existing settings.php to the new site, but add a database name suffix.
-  $DRUSH $DESTINATION --yes $EXTRA_SETTINGS --database clone-settings-php $SOURCE $DB_SUFFIX
+# Copy the existing settings.php to the new site, but add a database name suffix.
+$DRUSH $DESTINATION --yes $EXTRA_SETTINGS --database clone-settings-php $SOURCE $DB_SUFFIX
 
-  # Copy the database to the new location
-  $DRUSH $DESTINATION sql-sync --create-db --yes $SOURCE @self
-else
-  # Copy the existing settings.php to the new site, but add a database prefix.
-  $DRUSH $DESTINATION --yes $EXTRA_SETTINGS clone-settings-php $SOURCE $DB_PREFIX
-
-  # Drop all database tables with this prefix first, in case the environment is
-  # being rebuilt, and new tables were created in the environment.
-  $DRUSH $SOURCE --yes drop-prefixed-tables $DB_PREFIX
-
-  # Copy all the database tables, using the new prefix.
-  $DRUSH $SOURCE --yes clone-db-prefix $DB_PREFIX $PREFIX
-fi
+# Copy the database to the new location
+$DRUSH $DESTINATION sql-create --yes
+gunzip &lt; /tmp/ac-dump.sql.gz | $DRUSH $DESTINATION sql-cli
 
 # If we have the registry-rebuild command available, let&apos;s go ahead and use it
 # first. If modules or classes have changed names or directories, then the
@@ -269,7 +257,18 @@ make_vhost > /etc/apache2/sites-available/$PR_URL.conf
 # @todo: cater for non-ubuntu Linux distros.
 ln -s /etc/apache2/sites-available/$PR_URL.conf /etc/apache2/sites-enabled/
 sudo /usr/bin/service apache2 restart
-fi</command>
+fi
+
+# Enable Shield
+$DRUSH $DESTINATION pm-enable shield --yes
+$DRUSH $DESTINATION variable-set shield_enabled 1 --yes
+$DRUSH $DESTINATION variable-set shield_user &quot;{{ drupal_shield_user }}&quot; --yes
+$DRUSH $DESTINATION variable-set shield_pass &quot;{{ drupal_shield_password }}&quot; --yes
+
+# Enable stage_file_proxy
+$DRUSH $DESTINATION pm-enable stage_file_proxy --yes
+$DRUSH $DESTINATION variable-set stage_file_proxy_origin &quot;{{ drupal_stage_file_proxy_url }}&quot;
+$DRUSH $DESTINATION variable-set stage_file_proxy_origin_dir  &quot;{{ drupal_stage_file_proxy_path }}&quot;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -283,11 +282,29 @@ fi</command>
     <hudson.plugins.ansicolor.AnsiColorBuildWrapper plugin="ansicolor@0.4.1">
       <colorMapName>xterm</colorMapName>
     </hudson.plugins.ansicolor.AnsiColorBuildWrapper>
+    <EnvInjectBuildWrapper plugin="envinject@1.92.1">
+      <info>
+        <propertiesContent>ACQUIA_CLOUD_DATABASE_DESTINATION=/tmp/
+ACQUIA_CLOUD_ENVIRONMENT={{ acquia_cloud_environment }}
+ACQUIA_CLOUD_SITENAME={{ acquia_cloud_sitename }}
+ACQUIA_CLOUD_USERNAME={{ acquia_cloud_username }}
+</propertiesContent>
+        <loadFilesFromMaster>false</loadFilesFromMaster>
+      </info>
+    </EnvInjectBuildWrapper>
     <com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper plugin="ssh-agent@1.7">
       <credentialIds>
         <string></string>
       </credentialIds>
       <ignoreMissing>false</ignoreMissing>
     </com.cloudbees.jenkins.plugins.sshagent.SSHAgentBuildWrapper>
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding@1.5">
+      <bindings>
+        <org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+          <credentialsId></credentialsId>
+          <variable>ACQUIA_CLOUD_PASSWORD</variable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.StringBinding>
+      </bindings>
+    </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
   </buildWrappers>
 </project>

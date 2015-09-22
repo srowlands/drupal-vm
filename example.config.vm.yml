@@ -20,7 +20,6 @@ vagrant_synced_folders:
   - local_path: /var/www/govcms-vm
     destination: /var/www
     id: drupal
-    type: nfs
     create: true
 
 vagrant_sync_disable: false

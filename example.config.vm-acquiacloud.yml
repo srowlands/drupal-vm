@@ -59,15 +59,32 @@ drupal_mysql_dump: "/path/to/mysql-dump.sql.gz"
 # Set this to true if you wish to refresh the database on each provision.
 drupal_mysql_refresh: false
 
+# Acquia Cloud Connector settings.
+# If you configure the Acquia Cloud connector settings below then the database
+# will be cloned upon provision and the codebase will be used in place
+# of the default govCMS distribution.
+acquia_cloud_connector: true
+acquia_cloud_username: "INSERT_USERNAME@DOMAIN.COM"
+# Found in https://accounts.acquia.com/account/account_id/security?site=insight
+acquia_cloud_password: "INSERT_ACQUIA_CLOUD_API"
+acquia_cloud_git: "INSERT_ACQUIA_GIT_REPO"
+acquia_cloud_clone_path: "/var/www/drupal"
+acquia_cloud_key: "/vagrant/ssh-keys/INSERT_ACQUIA_CLOUD_KEY"
+# May be a branch of a tag.
+acquia_cloud_tag: "master"
+# May be one of [dev, test, prod].
+acquia_cloud_environment: "dev"
+acquia_cloud_sitename: "INSERT_SITE_NAME"
+
 # Optional git repository containing one or more themes.
-# drupal_theme_repository: "git@github.com:user/repo.git"
-# drupal_theme_version: "master"
-# drupal_theme_key: "/vagrant/ssh-keys/id_rsa"
+drupal_theme_repository: "git@github.com:user/repo.git"
+drupal_theme_version: "master"
+drupal_theme_key: "/vagrant/ssh-keys/INSERT_GITHUB_KEY"
 
 # Stage File Proxy URL
 # Provide an optional URL to proxy files to a remote location.
-# drupal_stage_file_proxy_url: "https://production-url.com"
-# drupal_stage_file_proxy_path: "sites/g/files/netXXX/f"
+drupal_stage_file_proxy_url: "http://INSERT_ACQUIA_SITE_URL"
+drupal_stage_file_proxy_path: "sites/default/files"
 
 # Shield configuration.
 drupal_shield_enabled: true
@@ -199,39 +216,3 @@ solr_xmx: "128M"
 
 # Selenium configuration
 selenium_version: 2.46.0
-
-# Jenkins configuration.
-jenkins_http_host: "{{ vagrant_ip }}"
-jenkins_jobs:
-  - name: "govcms_pull_request_builder"
-    template: templates/govcms-jenkins.xml.j2
-jenkins_plugins:
-  - 'git'
-  - 'github-api'
-  - 'plain-credentials'
-  - 'token-macro'
-  - 'github'
-  - 'ssh-agent'
-  - 'build-flow-plugin'
-  - 'credentials'
-  - 'log-parser'
-  - 'ghprb'
-  - 'ansicolor'
-jenkins_github_repo: "{{ drupal_theme_repository }}"
-jenkins_github_url: https://github.com/user/repository
-jenkins_github_stub: user/repository
-jenkins_description: "govCMS pull request environment builder"
-
-# AWS configuration.
-aws_access_key_id: "INSERT_AWS_ACCESS_KEY"
-aws_secret_key: "INSERT_AWS_SECRET_KEY"
-aws_instance_type: "t2.micro"
-aws_region: "ap-southeast-2"
-aws_security_groups: ["default", "INSERT_AWS_SECURITY_GROUP"]
-
-# Provide path to a private key (for ssh into provisioned instance).
-aws_keypair_name: "INSERT_AWS_KEYPAIR_NAME"
-aws_ssh_private_key: "/path/to/keypair/file.pem"
-
-# By default use an Ubuntu ami
-aws_ami: "ami-69631053"

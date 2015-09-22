@@ -1,14 +1,13 @@
 ---
 # `vagrant_box` can also be set to geerlingguy/centos6, geerlingguy/centos7,
 # geerlingguy/ubuntu1204, parallels/ubuntu-14.04, etc.
-vagrant_box: geerlingguy/ubuntu1404
-vagrant_user: vagrant
+vagrant_box: dummy
+vagrant_user: ubuntu
 
 # If you need to run multiple instances of Drupal VM, set a unique hostname,
 # machine name, and IP address for each instance.
 vagrant_hostname: govcms.dev
 vagrant_machine_name: govcms-vm
-vagrant_ip: 192.168.88.88
 
 # A list of synced folders, with the keys 'local_path', 'destination', 'id', and
 # a 'type' of [nfs|rsync|smb] (leave empty for slow native shares). See
@@ -20,13 +19,15 @@ vagrant_synced_folders:
   - local_path: /var/www/govcms-vm
     destination: /var/www
     id: drupal
+    type: rsync
     create: true
 
-vagrant_sync_disable: false
+# Disable sync on AWS by default.
+vagrant_sync_disable: true
 
 # Memory and CPU to use for this VM.
-vagrant_memory: 1024
-vagrant_cpus: 2
+vagrant_memory: 512
+vagrant_cpus: 1
 
 # Set this to false if you are using a different site deployment strategy and
 # would like to configure 'vagrant_synced_folders' and 'apache_vhosts' manually.
@@ -40,7 +41,7 @@ install_site: true
 # Settings for building a Drupal site from a makefile (if 'build_from_makefile'
 # is 'true').
 drupal_major_version: 7
-drupal_core_path: /var/www/drupal
+drupal_core_path: /var/www/drupal/docroot
 drupal_domain: govcms.dev
 drupal_site_name: Drupal
 drupal_site_directory: default
@@ -55,19 +56,36 @@ drupal_mysql_database: drupal
 # Set this to true if you do not wish to install a blank govCMS instance, but
 # rather start by importing a SQL dump.
 import_site: false
-drupal_mysql_dump: "/path/to/mysql-dump.sql.gz"
+# drupal_mysql_dump: "/path/to/mysql-dump.sql.gz"
 # Set this to true if you wish to refresh the database on each provision.
-drupal_mysql_refresh: false
+# drupal_mysql_refresh: false
+
+# Acquia Cloud Connector settings.
+# If you configure the Acquia Cloud connector settings below then the database
+# will be cloned upon provision and the codebase will be used in place
+# of the default govCMS distribution.
+acquia_cloud_connector: true
+acquia_cloud_username: "INSERT_USERNAME@DOMAIN.COM"
+# Found in https://accounts.acquia.com/account/account_id/security?site=insight
+acquia_cloud_password: "INSERT_ACQUIA_CLOUD_API"
+acquia_cloud_git: "INSERT_ACQUIA_GIT_REPO"
+acquia_cloud_clone_path: "/var/www/drupal"
+acquia_cloud_key: "/vagrant/ssh-keys/INSERT_ACQUIA_CLOUD_KEY"
+# May be a branch of a tag.
+acquia_cloud_tag: "master"
+# May be one of [dev, test, prod].
+acquia_cloud_environment: "dev"
+acquia_cloud_sitename: "INSERT_SITE_NAME"
 
 # Optional git repository containing one or more themes.
-# drupal_theme_repository: "git@github.com:user/repo.git"
-# drupal_theme_version: "master"
-# drupal_theme_key: "/vagrant/ssh-keys/id_rsa"
+drupal_theme_repository: "git@github.com:user/repo.git"
+drupal_theme_version: "master"
+drupal_theme_key: "/vagrant/ssh-keys/INSERT_GITHUB_KEY"
 
 # Stage File Proxy URL
 # Provide an optional URL to proxy files to a remote location.
-# drupal_stage_file_proxy_url: "https://production-url.com"
-# drupal_stage_file_proxy_path: "sites/g/files/netXXX/f"
+drupal_stage_file_proxy_url: "http://INSERT_ACQUIA_SITE_URL"
+drupal_stage_file_proxy_path: "sites/default/files"
 
 # Shield configuration.
 drupal_shield_enabled: true
@@ -110,13 +128,13 @@ mysql_users:
   - name: "{{ drupal_mysql_user }}"
     host: "%"
     password: "{{ drupal_mysql_password }}"
-    priv: "{{ drupal_mysql_database }}.*:ALL"
+    priv: "{{ drupal_mysql_database }}%.*:ALL"
 
 # Comment out any extra utilities you don't want to install. If you don't want
 # to install *any* extras, make set this value to an empty set, e.g. `[]`.
 installed_extras:
   - adminer
-  # - jenkins
+  - jenkins
   - mailhog
   - memcached
   - pimpmylog
@@ -150,7 +168,7 @@ firewall_allowed_tcp_ports:
 firewall_log_dropped_packets: false
 
 # PHP Configuration. Currently-supported versions: 5.5, 5.6, 7.0 (experimental).
-php_version: "5.5"
+php_version: "5.6"
 php_memory_limit: "192M"
 php_display_errors: "On"
 php_display_startup_errors: "On"
@@ -201,10 +219,10 @@ solr_xmx: "128M"
 selenium_version: 2.46.0
 
 # Jenkins configuration.
-jenkins_http_host: "{{ vagrant_ip }}"
+jenkins_http_host: "0.0.0.0"
 jenkins_jobs:
   - name: "govcms_pull_request_builder"
-    template: templates/govcms-jenkins.xml.j2
+    template: templates/govcms-jenkins-acquiacloud.xml.j2
 jenkins_plugins:
   - 'git'
   - 'github-api'
@@ -217,6 +235,8 @@ jenkins_plugins:
   - 'log-parser'
   - 'ghprb'
   - 'ansicolor'
+  - 'credentials-binding'
+  - 'envinject'
 jenkins_github_repo: "{{ drupal_theme_repository }}"
 jenkins_github_url: https://github.com/user/repository
 jenkins_github_stub: user/repository
@@ -225,9 +245,10 @@ jenkins_description: "govCMS pull request environment builder"
 # AWS configuration.
 aws_access_key_id: "INSERT_AWS_ACCESS_KEY"
 aws_secret_key: "INSERT_AWS_SECRET_KEY"
-aws_instance_type: "t2.micro"
+aws_instance_type: "t2.small"
 aws_region: "ap-southeast-2"
 aws_security_groups: ["default", "INSERT_AWS_SECURITY_GROUP"]
+aws_elastic_ip: "INSERT_AWS_ELASTIC_IP"
 
 # Provide path to a private key (for ssh into provisioned instance).
 aws_keypair_name: "INSERT_AWS_KEYPAIR_NAME"

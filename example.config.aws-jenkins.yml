@@ -21,6 +21,7 @@ vagrant_synced_folders:
     id: drupal
     type: rsync
     create: true
+
 # Disable sync on AWS by default.
 vagrant_sync_disable: true
 

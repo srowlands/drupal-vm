@@ -74,3 +74,7 @@
     mode=0775
   sudo: yes
   when: ansible_os_family == 'Debian' and '"jenkins" in installed_extras'
+
+- name: Allow Jenkins access to restart webserver
+  lineinfile: "dest=/etc/sudoers.d/jenkins create=yes state=present mode=0440 regexp='^%jenkins' line='jenkins ALL=(ALL) NOPASSWD:/usr/bin/service apache2 restart'"
+  sudo: yes
