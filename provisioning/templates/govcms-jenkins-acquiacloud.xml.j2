@@ -267,8 +267,8 @@ $DRUSH $DESTINATION variable-set shield_pass &quot;{{ drupal_shield_password }}&
 
 # Enable stage_file_proxy
 $DRUSH $DESTINATION pm-enable stage_file_proxy --yes
-$DRUSH $DESTINATION variable-set stage_file_proxy_origin &quot;{{ drupal_stage_file_proxy_url }}&quot;
-$DRUSH $DESTINATION variable-set stage_file_proxy_origin_dir  &quot;{{ drupal_stage_file_proxy_path }}&quot;</command>
+$DRUSH $DESTINATION variable-set stage_file_proxy_origin &quot;{{ drupal_stage_file_proxy_url }}&quot; --yes --exact
+$DRUSH $DESTINATION variable-set stage_file_proxy_origin_dir  &quot;{{ drupal_stage_file_proxy_path }}&quot;</command> --yes --exact
     </hudson.tasks.Shell>
   </builders>
   <publishers>
