@@ -40,7 +40,7 @@ install_site: true
 # Settings for building a Drupal site from a makefile (if 'build_from_makefile'
 # is 'true').
 drupal_major_version: 7
-drupal_core_path: /var/www/drupal
+drupal_core_path: /var/www/drupal/docroot
 drupal_domain: govcms.dev
 drupal_site_name: Drupal
 drupal_site_directory: default
