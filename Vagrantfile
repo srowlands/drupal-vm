@@ -25,6 +25,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     box_config.ssh.forward_agent = true
 
     box_config.vm.box = vconfig['vagrant_box']
+    box_config.vm.box_version = vconfig['vagrant_box_version']
 
     # If hostsupdater plugin is installed, add all servernames as aliases.
     if Vagrant.has_plugin?("vagrant-hostsupdater")
