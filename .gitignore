@@ -5,3 +5,4 @@ ssh-keys/*
 vagrant_ansible_inventory_default
 examples/prod/inventory
 config.yml
+config.*.yml
